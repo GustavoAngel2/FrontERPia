@@ -11,6 +11,8 @@ import { Route, createBrowserRouter, createRoutesFromElements, RouterProvider } 
 import { RequireAuth, DisabledUponLogin } from '../utils/auth'
 
 import RecetasView from './pages/recetas/recetas'
+import ChatBot from './ui/ChatBot'
+import { ThemeProvider } from '../context/ThemeContext'
 
 function App() {
 
@@ -49,7 +51,11 @@ function App() {
     )
   )
 
-  return <RouterProvider router={router} />
+  return (
+    <ThemeProvider>
+      <RouterProvider router={router} />
+      <ChatBot />
+    </ThemeProvider>
+  )
 }
-
-export default App;
+export default App

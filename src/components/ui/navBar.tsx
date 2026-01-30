@@ -1,9 +1,12 @@
 // Adjust the path as necessary
 import { Link } from "react-router-dom";
 import { useAuth } from "../../utils/auth";
+import { useTheme } from "../../context/ThemeContext";
+import "./navBar.css";
 
 const NavBar = () => {
   const { isLogged, user, logout } = useAuth();
+  const { isDarkMode, toggleTheme } = useTheme();
 
   return (
     <nav className="navbar navbar-expand-lg">
@@ -23,6 +26,17 @@ const NavBar = () => {
 
           {/* LADO DERECHO */}
           <ul className="navbar-nav ms-auto">
+            {/* Theme Toggle */}
+            <li className="nav-item">
+              <button
+                className="nav-link theme-toggle"
+                onClick={toggleTheme}
+                title={isDarkMode ? "Cambiar a tema claro" : "Cambiar a tema oscuro"}
+              >
+                <i className={`bi ${isDarkMode ? 'bi-sun-fill' : 'bi-moon-fill'}`}></i>
+              </button>
+            </li>
+
             {!isLogged && (
               <li className="nav-item dropdown">
                 <button
