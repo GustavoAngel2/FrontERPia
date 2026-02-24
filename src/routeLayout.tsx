@@ -1,9 +1,16 @@
 
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
+import NavBar from "./components/ui/navBar";
 
 const RootLayout = () => {
+    const location = useLocation();
+    const isLoginPage = location.pathname === "/login";
+
     return (
-        <Outlet />
+        <>
+            {!isLoginPage && <NavBar />}
+            <Outlet />
+        </>
     );
 }
 

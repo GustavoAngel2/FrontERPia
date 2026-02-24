@@ -1,0 +1,19 @@
+/* DataTable component uses Bootstrap classes - minimal optional overrides */
+
+.card {
+  border-radius: 0.5rem;
+}
+
+.table tbody tr {
+  transition: background-color 0.15s ease-in-out;
+}
+
+.table tbody tr:hover {
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+.btn-sm {
+  padding: 0.35rem 0.65rem;
+  font-size: 0.8125rem;
+}
+

@@ -1,7 +1,6 @@
 import RootLayout from '../routeLayout'
 import Dashboard from './pages/dashboard'
 import Login from './pages/login/login'
-import ArticulosView from './pages/articulos/articulos'
 
 import 'bootstrap/dist/css/bootstrap.min.css'
 import 'bootstrap-icons/font/bootstrap-icons.css'
@@ -13,6 +12,10 @@ import { RequireAuth, DisabledUponLogin } from '../utils/auth'
 import RecetasView from './pages/recetas/recetas'
 import ChatBot from './ui/ChatBot'
 import { ThemeProvider } from '../context/ThemeContext'
+import ProductosView from './pages/productos/productos'
+import BancosView from './pages/bancos/bancos'
+import ProveedoresView from './pages/proveedores/proveedores'
+import CategoriasView from './pages/categorias/categorias'
 
 function App() {
 
@@ -32,18 +35,37 @@ function App() {
         />
 
         <Route
-          path="articulos"
+          path="recetas"
           element={
-            <RequireAuth>
-              <ArticulosView />
-            </RequireAuth>
+              <RecetasView />
           }
         />
 
         <Route
-          path="recetas"
+          path="productos"
           element={
-              <RecetasView />
+              <ProductosView />
+          }
+        />
+
+                <Route
+          path="bancos"
+          element={
+              <BancosView />
+          }
+        />
+
+        <Route
+          path="proveedores"
+          element={
+              <ProveedoresView />
+          }
+        />
+
+        <Route
+          path="categorias"
+          element={
+              <CategoriasView />
           }
         />
 

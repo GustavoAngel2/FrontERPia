@@ -42,7 +42,7 @@ const ChatBot: React.FC = () => {
     setTimeout(() => {
       const botMessage: Message = {
         id: (Date.now() + 1).toString(),
-        text: 'Gracias por tu mensaje. Este es un chatbot de demostración. Puedes personalizar mis respuestas en el código.',
+        text: '',
         sender: 'bot',
         timestamp: new Date(),
       }

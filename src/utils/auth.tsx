@@ -2,6 +2,7 @@ import {
   createContext,
   useContext,
   useState,
+  useEffect,
   type ReactNode,
 } from "react";
 import { Navigate } from "react-router-dom";
@@ -25,10 +26,31 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 const API_URL = "http://localhost:5020";
+const STORAGE_KEY = "auth_user";
+const LOGIN_KEY = "auth_isLogged";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserInfo | null>(null);
   const [isLogged, setIsLogged] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Load user data from localStorage on mount
+  useEffect(() => {
+    const storedUser = localStorage.getItem(STORAGE_KEY);
+    const storedIsLogged = localStorage.getItem(LOGIN_KEY);
+
+    if (storedUser && storedIsLogged === "true") {
+      try {
+        setUser(JSON.parse(storedUser));
+        setIsLogged(true);
+      } catch (error) {
+        console.error("Error parsing stored user:", error);
+        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(LOGIN_KEY);
+      }
+    }
+    setIsLoading(false);
+  }, []);
 
   async function login(credentials: Credentials): Promise<boolean> {
     try {
@@ -43,8 +65,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const data: LoginResponse = await res.json();
 
       if (!data.Error) {
-        setUser(data.Response.data.Usuario);
+        const userData = data.Response.data.Usuario;
+        setUser(userData);
         setIsLogged(true);
+        
+        // Save to localStorage
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(userData));
+        localStorage.setItem(LOGIN_KEY, "true");
+        
         toast.info(`Bienvenido ${credentials.username}!`);
         return true;
       }
@@ -61,6 +89,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   function logout() {
     setUser(null);
     setIsLogged(false);
+    
+    // Clear localStorage
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(LOGIN_KEY);
+  }
+
+  // Don't render until we've checked localStorage
+  if (isLoading) {
+    return <div>Cargando...</div>;
   }
 
   return (

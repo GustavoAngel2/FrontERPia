@@ -10,11 +10,19 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+html {
+  width: 100% !important;
+  height: 100% !important;
+  overflow-x: hidden !important;
+}
+
 body {
-  margin: 0;
-  padding: 0;
-  border: 0;
-  height: 100vh;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  width: 100% !important;
+  min-height: 100vh !important;
+  overflow-x: hidden !important;
 }
 
 Link a{
