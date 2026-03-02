@@ -103,7 +103,7 @@ function DataTable<T extends { Id: number }>({
                   {column.label}
                 </th>
               ))}
-              {showActions && onEdit && onDelete && <th style={{ width: "120px" }} className="fw-bold">Acciones</th>}
+              {showActions && onEdit && <th style={{ width: "80px" }} className="fw-bold">Acciones</th>}
             </tr>
           </thead>
           <tbody className="table-group-divider">
@@ -116,22 +116,29 @@ function DataTable<T extends { Id: number }>({
                       : String(row[column.key])}
                   </td>
                 ))}
-                {showActions && onEdit && onDelete && (
+                {showActions && onEdit && (
                   <td className="align-middle">
-                    <button
-                      className="btn btn-sm btn-warning me-1"
-                      onClick={() => onEdit(row)}
-                      title="Editar"
-                    >
-                      ✏️
-                    </button>
-                    <button
-                      className="btn btn-sm btn-danger"
-                      onClick={() => onDelete(row.Id)}
-                      title="Eliminar"
-                    >
-                      🗑️
-                    </button>
+                    <div className="dropdown">
+                      <button
+                        className="btn btn-sm btn-outline-secondary dropdown-toggle"
+                        type="button"
+                        data-bs-toggle="dropdown"
+                        aria-expanded="false"
+                        title="Acciones"
+                      >
+                        ⋮
+                      </button>
+                      <ul className="dropdown-menu">
+                        <li>
+                          <button
+                            className="dropdown-item"
+                            onClick={() => onEdit(row)}
+                          >
+                            ✏️ Editar
+                          </button>
+                        </li>
+                      </ul>
+                    </div>
                   </td>
                 )}
               </tr>

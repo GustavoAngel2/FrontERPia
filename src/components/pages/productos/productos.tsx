@@ -12,6 +12,7 @@ function ProductosView() {
   const [response, setResponse] = useState<defaultApiResponse | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState({ Costo: "", Codigo: "", Descripcion: "", PrecioVenta: "" });
+  const [showModal, setShowModal] = useState(false);
 
   const productosColumns: Column<ProductoModel>[] = [
     { key: "Id", label: "ID", width: "60px" },
@@ -69,6 +70,7 @@ function ProductosView() {
       };
       await productosService.crearProducto(payload);
       setForm({ Costo: "", Codigo: "", Descripcion: "", PrecioVenta: "" });
+      setShowModal(false);
       await obtenerProductos();
     } catch (err) {
       console.error(err);
@@ -96,6 +98,7 @@ function ProductosView() {
       await productosService.actualizarProducto(payload);
       setForm({ Costo: "", Codigo: "", Descripcion: "", PrecioVenta: "" });
       setEditingId(null);
+      setShowModal(false);
       await obtenerProductos();
     } catch (err) {
       console.error(err);
@@ -108,6 +111,19 @@ function ProductosView() {
   const editarProducto = (p: ProductoModel) => {
     setEditingId(p.Id);
     setForm({ Costo: p.Costo.toString(), Codigo: p.Codigo, Descripcion: p.Descripcion, PrecioVenta: p.PrecioVenta.toString() });
+    setShowModal(true);
+  };
+
+  const abrirModalCrear = () => {
+    setEditingId(null);
+    setForm({ Costo: "", Codigo: "", Descripcion: "", PrecioVenta: "" });
+    setShowModal(true);
+  };
+
+  const cerrarModal = () => {
+    setShowModal(false);
+    setEditingId(null);
+    setForm({ Costo: "", Codigo: "", Descripcion: "", PrecioVenta: "" });
   };
 
   const eliminarProducto = async (id: number) => {
@@ -142,49 +158,105 @@ function ProductosView() {
         <div className="container mt-4">
           <h2 className="mb-4">Productos</h2>
 
-        <div className="card mb-4 shadow-sm">
-          <div className="card-body">
-            <div className="row g-2">
-              <div className="col-md-3">
-                <input className="form-control" placeholder="Código" value={form.Codigo} onChange={(e) => setForm({ ...form, Codigo: e.target.value })} />
+          <div className="mb-3">
+            <button className="btn btn-primary" onClick={abrirModalCrear}>
+              <i className="fas fa-plus me-2"></i>Agregar Producto
+            </button>
+          </div>
+
+          {loading && <div className="alert alert-info">Cargando...</div>}
+
+          <DataTable
+            data={productos}
+            columns={productosColumns}
+            itemsPerPage={10}
+            loading={loading}
+            onEdit={editarProducto}
+            showActions={true}
+            emptyMessage="No hay productos"
+          />
+        </div>
+      </div>
+
+      {/* Modal */}
+      <div className={`modal fade ${showModal ? 'show' : ''}`} style={{ display: showModal ? 'block' : 'none' }} tabIndex={-1}>
+        <div className="modal-dialog modal-lg">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h5 className="modal-title">{editingId ? 'Editar Producto' : 'Crear Producto'}</h5>
+              <button type="button" className="btn-close" onClick={cerrarModal}></button>
+            </div>
+            <div className="modal-body">
+              <div className="row g-3">
+                <div className="col-md-6">
+                  <label className="form-label">Código</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={form.Codigo}
+                    onChange={(e) => setForm({ ...form, Codigo: e.target.value })}
+                    placeholder="Ingrese código del producto"
+                  />
+                </div>
+                <div className="col-md-6">
+                  <label className="form-label">Descripción</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={form.Descripcion}
+                    onChange={(e) => setForm({ ...form, Descripcion: e.target.value })}
+                    placeholder="Ingrese descripción del producto"
+                  />
+                </div>
+                <div className="col-md-6">
+                  <label className="form-label">Costo</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    className="form-control"
+                    value={form.Costo}
+                    onChange={(e) => setForm({ ...form, Costo: e.target.value })}
+                    placeholder="0.00"
+                  />
+                </div>
+                <div className="col-md-6">
+                  <label className="form-label">Precio de Venta</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    className="form-control"
+                    value={form.PrecioVenta}
+                    onChange={(e) => setForm({ ...form, PrecioVenta: e.target.value })}
+                    placeholder="0.00"
+                  />
+                </div>
               </div>
-              <div className="col-md-5">
-                <input className="form-control" placeholder="Descripción" value={form.Descripcion} onChange={(e) => setForm({ ...form, Descripcion: e.target.value })} />
-              </div>
-              <div className="col-md-2">
-                <input className="form-control" placeholder="Costo" value={form.Costo} onChange={(e) => setForm({ ...form, Costo: e.target.value })} type="number" step="0.01" />
-              </div>
-              <div className="col-md-2">
-                <input className="form-control" placeholder="Precio" value={form.PrecioVenta} onChange={(e) => setForm({ ...form, PrecioVenta: e.target.value })} type="number" step="0.01" />
-              </div>
-              <div className="col-md-2 d-flex gap-2">
-                {editingId ? (
-                  <>
-                    <button className="btn btn-warning" onClick={() => actualizarProducto(editingId)} disabled={loading}>Actualizar</button>
-                    <button className="btn btn-secondary" onClick={() => { setEditingId(null); setForm({ Costo: "", Codigo: "", Descripcion: "", PrecioVenta: "" }); }} disabled={loading}>Cancelar</button>
-                  </>
-                ) : (
-                  <button className="btn btn-success" onClick={crearProducto} disabled={loading}>Crear</button>
-                )}
-              </div>
+            </div>
+            <div className="modal-footer">
+              {editingId && (
+                <button type="button" className="btn btn-danger me-auto" onClick={() => eliminarProducto(editingId)} disabled={loading}>
+                  {loading ? 'Eliminando...' : '🗑️ Eliminar'}
+                </button>
+              )}
+              <button type="button" className="btn btn-secondary" onClick={cerrarModal} disabled={loading}>
+                Cancelar
+              </button>
+              {editingId ? (
+                <button type="button" className="btn btn-warning" onClick={() => actualizarProducto(editingId)} disabled={loading}>
+                  {loading ? 'Actualizando...' : 'Actualizar'}
+                </button>
+              ) : (
+                <button type="button" className="btn btn-success" onClick={crearProducto} disabled={loading}>
+                  {loading ? 'Creando...' : 'Crear'}
+                </button>
+              )}
             </div>
           </div>
         </div>
-
-        {loading && <div className="alert alert-info">Cargando...</div>}
-
-        <DataTable
-          data={productos}
-          columns={productosColumns}
-          itemsPerPage={10}
-          loading={loading}
-          onEdit={editarProducto}
-          onDelete={eliminarProducto}
-          showActions={true}
-          emptyMessage="No hay productos"
-        />
-        </div>
       </div>
+
+      {/* Modal backdrop */}
+      {showModal && <div className="modal-backdrop fade show"></div>}
     </>
   );
 }

@@ -22,6 +22,7 @@ function ProveedoresView() {
     RazonSocial: "",
     CLABE: "",
   });
+  const [showModal, setShowModal] = useState(false);
 
   const proveedoresColumns: Column<Proveedor>[] = [
     { key: "Id", label: "ID", width: "60px" },
@@ -78,6 +79,7 @@ function ProveedoresView() {
       };
       await proveedoresService.crearProveedor(payload);
       setForm({ Nombre: "", Direccion: "", Telefono: "", IdBanco: 0, PlazoPago: 0, Correo: "", RFC: "", RazonSocial: "", CLABE: "" });
+      setShowModal(false);
       await obtenerProveedores();
     } catch (err) {
       console.error(err);
@@ -107,6 +109,7 @@ function ProveedoresView() {
       await proveedoresService.actualizarProveedor(payload);
       setForm({ Nombre: "", Direccion: "", Telefono: "", IdBanco: 0, PlazoPago: 0, Correo: "", RFC: "", RazonSocial: "", CLABE: "" });
       setEditingId(null);
+      setShowModal(false);
       await obtenerProveedores();
     } catch (err) {
       console.error(err);
@@ -128,6 +131,39 @@ function ProveedoresView() {
       RFC: p.RFC,
       RazonSocial: p.RazonSocial,
       CLABE: p.CLABE,
+    });
+    setShowModal(true);
+  };
+
+  const abrirModalCrear = () => {
+    setEditingId(null);
+    setForm({
+      Nombre: "",
+      Direccion: "",
+      Telefono: "",
+      IdBanco: 0,
+      PlazoPago: 0,
+      Correo: "",
+      RFC: "",
+      RazonSocial: "",
+      CLABE: "",
+    });
+    setShowModal(true);
+  };
+
+  const cerrarModal = () => {
+    setShowModal(false);
+    setEditingId(null);
+    setForm({
+      Nombre: "",
+      Direccion: "",
+      Telefono: "",
+      IdBanco: 0,
+      PlazoPago: 0,
+      Correo: "",
+      RFC: "",
+      RazonSocial: "",
+      CLABE: "",
     });
   };
 
@@ -163,66 +199,153 @@ function ProveedoresView() {
         <div className="container mt-4">
           <h2 className="mb-4">Proveedores</h2>
 
-        <div className="card mb-4 shadow-sm">
-          <div className="card-body">
-            <div className="row g-2 mb-3">
-              <div className="col-md-3">
-                <input className="form-control" placeholder="Nombre" value={form.Nombre} onChange={(e) => setForm({ ...form, Nombre: e.target.value })} />
-              </div>
-              <div className="col-md-3">
-                <input className="form-control" placeholder="Dirección" value={form.Direccion} onChange={(e) => setForm({ ...form, Direccion: e.target.value })} />
-              </div>
-              <div className="col-md-3">
-                <input className="form-control" placeholder="Teléfono" value={form.Telefono} onChange={(e) => setForm({ ...form, Telefono: e.target.value })} />
-              </div>
-              <div className="col-md-3">
-                <input className="form-control" placeholder="Correo" value={form.Correo} onChange={(e) => setForm({ ...form, Correo: e.target.value })} />
+          <div className="mb-3">
+            <button className="btn btn-primary" onClick={abrirModalCrear}>
+              <i className="fas fa-plus me-2"></i>Agregar Proveedor
+            </button>
+          </div>
+
+          {loading && <div className="alert alert-info">Cargando...</div>}
+
+          <DataTable
+            data={proveedores}
+            columns={proveedoresColumns}
+            itemsPerPage={10}
+            loading={loading}
+            onEdit={editarProveedor}
+            showActions={true}
+            emptyMessage="No hay proveedores"
+          />
+        </div>
+      </div>
+
+      {/* Modal */}
+      <div className={`modal fade ${showModal ? 'show' : ''}`} style={{ display: showModal ? 'block' : 'none' }} tabIndex={-1}>
+        <div className="modal-dialog modal-xl">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h5 className="modal-title">{editingId ? 'Editar Proveedor' : 'Crear Proveedor'}</h5>
+              <button type="button" className="btn-close" onClick={cerrarModal}></button>
+            </div>
+            <div className="modal-body">
+              <div className="row g-3">
+                <div className="col-md-6">
+                  <label className="form-label">Nombre</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={form.Nombre}
+                    onChange={(e) => setForm({ ...form, Nombre: e.target.value })}
+                    placeholder="Ingrese nombre del proveedor"
+                  />
+                </div>
+                <div className="col-md-6">
+                  <label className="form-label">Dirección</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={form.Direccion}
+                    onChange={(e) => setForm({ ...form, Direccion: e.target.value })}
+                    placeholder="Ingrese dirección"
+                  />
+                </div>
+                <div className="col-md-6">
+                  <label className="form-label">Teléfono</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={form.Telefono}
+                    onChange={(e) => setForm({ ...form, Telefono: e.target.value })}
+                    placeholder="Ingrese teléfono"
+                  />
+                </div>
+                <div className="col-md-6">
+                  <label className="form-label">Correo</label>
+                  <input
+                    type="email"
+                    className="form-control"
+                    value={form.Correo}
+                    onChange={(e) => setForm({ ...form, Correo: e.target.value })}
+                    placeholder="Ingrese correo electrónico"
+                  />
+                </div>
+                <div className="col-md-4">
+                  <label className="form-label">RFC</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={form.RFC}
+                    onChange={(e) => setForm({ ...form, RFC: e.target.value })}
+                    placeholder="Ingrese RFC"
+                  />
+                </div>
+                <div className="col-md-4">
+                  <label className="form-label">Razón Social</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={form.RazonSocial}
+                    onChange={(e) => setForm({ ...form, RazonSocial: e.target.value })}
+                    placeholder="Ingrese razón social"
+                  />
+                </div>
+                <div className="col-md-4">
+                  <label className="form-label">CLABE</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={form.CLABE}
+                    onChange={(e) => setForm({ ...form, CLABE: e.target.value })}
+                    placeholder="Ingrese CLABE"
+                  />
+                </div>
+                <div className="col-md-6">
+                  <label className="form-label">ID Banco</label>
+                  <input
+                    type="number"
+                    className="form-control"
+                    value={form.IdBanco}
+                    onChange={(e) => setForm({ ...form, IdBanco: parseInt(e.target.value) || 0 })}
+                    placeholder="0"
+                  />
+                </div>
+                <div className="col-md-6">
+                  <label className="form-label">Plazo de Pago (días)</label>
+                  <input
+                    type="number"
+                    className="form-control"
+                    value={form.PlazoPago}
+                    onChange={(e) => setForm({ ...form, PlazoPago: parseInt(e.target.value) || 0 })}
+                    placeholder="0"
+                  />
+                </div>
               </div>
             </div>
-            <div className="row g-2 mb-3">
-              <div className="col-md-2">
-                <input className="form-control" placeholder="RFC" value={form.RFC} onChange={(e) => setForm({ ...form, RFC: e.target.value })} />
-              </div>
-              <div className="col-md-2">
-                <input className="form-control" placeholder="Razón Social" value={form.RazonSocial} onChange={(e) => setForm({ ...form, RazonSocial: e.target.value })} />
-              </div>
-              <div className="col-md-2">
-                <input className="form-control" placeholder="CLABE" value={form.CLABE} onChange={(e) => setForm({ ...form, CLABE: e.target.value })} />
-              </div>
-              <div className="col-md-2">
-                <input className="form-control" placeholder="ID Banco" type="number" value={form.IdBanco} onChange={(e) => setForm({ ...form, IdBanco: parseInt(e.target.value) || 0 })} />
-              </div>
-              <div className="col-md-2">
-                <input className="form-control" placeholder="Plazo Pago" type="number" value={form.PlazoPago} onChange={(e) => setForm({ ...form, PlazoPago: parseInt(e.target.value) || 0 })} />
-              </div>
-              <div className="col-md-2 d-flex gap-2">
-                {editingId ? (
-                  <>
-                    <button className="btn btn-warning" onClick={() => actualizarProveedor(editingId)} disabled={loading}>Actualizar</button>
-                    <button className="btn btn-secondary" onClick={() => { setEditingId(null); setForm({ Nombre: "", Direccion: "", Telefono: "", IdBanco: 0, PlazoPago: 0, Correo: "", RFC: "", RazonSocial: "", CLABE: "" }); }} disabled={loading}>Cancelar</button>
-                  </>
-                ) : (
-                  <button className="btn btn-success" onClick={crearProveedor} disabled={loading}>Crear</button>
-                )}
-              </div>
+            <div className="modal-footer">
+              {editingId && (
+                <button type="button" className="btn btn-danger me-auto" onClick={() => eliminarProveedor(editingId)} disabled={loading}>
+                  {loading ? 'Eliminando...' : '🗑️ Eliminar'}
+                </button>
+              )}
+              <button type="button" className="btn btn-secondary" onClick={cerrarModal} disabled={loading}>
+                Cancelar
+              </button>
+              {editingId ? (
+                <button type="button" className="btn btn-warning" onClick={() => actualizarProveedor(editingId)} disabled={loading}>
+                  {loading ? 'Actualizando...' : 'Actualizar'}
+                </button>
+              ) : (
+                <button type="button" className="btn btn-success" onClick={crearProveedor} disabled={loading}>
+                  {loading ? 'Creando...' : 'Crear'}
+                </button>
+              )}
             </div>
           </div>
         </div>
-
-        {loading && <div className="alert alert-info">Cargando...</div>}
-
-        <DataTable
-          data={proveedores}
-          columns={proveedoresColumns}
-          itemsPerPage={10}
-          loading={loading}
-          onEdit={editarProveedor}
-          onDelete={eliminarProveedor}
-          showActions={true}
-          emptyMessage="No hay proveedores"
-        />
-        </div>
       </div>
+
+      {/* Modal backdrop */}
+      {showModal && <div className="modal-backdrop fade show"></div>}
     </>
   );
 }

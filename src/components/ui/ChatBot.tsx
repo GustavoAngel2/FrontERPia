@@ -8,8 +8,12 @@ interface Message {
   timestamp: Date
 }
 
-const ChatBot: React.FC = () => {
-  const [isOpen, setIsOpen] = useState(false)
+interface ChatBotProps {
+  variant?: 'floating' | 'inline'
+}
+
+const ChatBot: React.FC<ChatBotProps> = ({ variant = 'floating' }) => {
+  const [isOpen, setIsOpen] = useState(variant === 'inline')
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -53,28 +57,36 @@ const ChatBot: React.FC = () => {
 
   return (
     <>
-      {/* Floating Button */}
-      <button
-        className="chatbot-floating-btn"
-        onClick={() => setIsOpen(!isOpen)}
-        title="Abrir chat"
-      >
-        <i className="bi bi-chat-dots-fill"></i>
-      </button>
+      {/* Floating Button (only in floating mode) */}
+      {variant === 'floating' && (
+        <button
+          className="chatbot-floating-btn"
+          onClick={() => setIsOpen(!isOpen)}
+          title="Abrir chat"
+        >
+          <i className="bi bi-chat-dots-fill"></i>
+        </button>
+      )}
 
       {/* Chat Window */}
       {isOpen && (
-        <div className="chatbot-window">
+        <div
+          className={`chatbot-window ${
+            variant === 'inline' ? 'chatbot-inline' : ''
+          }`}
+        >
           {/* Header */}
           <div className="chatbot-header">
             <h3>Asistente</h3>
-            <button
-              className="chatbot-close-btn"
-              onClick={() => setIsOpen(false)}
-              title="Cerrar"
-            >
-              <i className="bi bi-x-lg"></i>
-            </button>
+            {variant === 'floating' && (
+              <button
+                className="chatbot-close-btn"
+                onClick={() => setIsOpen(false)}
+                title="Cerrar"
+              >
+                <i className="bi bi-x-lg"></i>
+              </button>
+            )}
           </div>
 
           {/* Messages Container */}

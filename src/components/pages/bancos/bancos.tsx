@@ -12,6 +12,7 @@ function BancosView() {
   const [response, setResponse] = useState<defaultApiResponse | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState({ Nombre: "", Direccion: "" });
+  const [showModal, setShowModal] = useState(false);
 
   const bancosColumns: Column<BancoModel>[] = [
     { key: "Id", label: "ID", width: "60px" },
@@ -59,6 +60,7 @@ function BancosView() {
       };
       await bancosService.crearBanco(payload);
       setForm({ Nombre: "", Direccion: "" });
+      setShowModal(false);
       await obtenerBancos();
     } catch (err) {
       console.error(err);
@@ -81,6 +83,7 @@ function BancosView() {
       await bancosService.actualizarBanco(payload);
       setForm({ Nombre: "", Direccion: "" });
       setEditingId(null);
+      setShowModal(false);
       await obtenerBancos();
     } catch (err) {
       console.error(err);
@@ -93,6 +96,19 @@ function BancosView() {
   const editarBanco = (b: BancoModel) => {
     setEditingId(b.Id);
     setForm({ Nombre: b.Nombre, Direccion: b.Direccion });
+    setShowModal(true);
+  };
+
+  const abrirModalCrear = () => {
+    setEditingId(null);
+    setForm({ Nombre: "", Direccion: "" });
+    setShowModal(true);
+  };
+
+  const cerrarModal = () => {
+    setShowModal(false);
+    setEditingId(null);
+    setForm({ Nombre: "", Direccion: "" });
   };
 
   const eliminarBanco = async (id: number) => {
@@ -127,43 +143,77 @@ function BancosView() {
         <div className="container mt-4">
           <h2 className="mb-4">Bancos</h2>
 
-        <div className="card mb-4 shadow-sm">
-          <div className="card-body">
-            <div className="row g-2">
-              <div className="col-md-5">
-                <input className="form-control" placeholder="Nombre" value={form.Nombre} onChange={(e) => setForm({ ...form, Nombre: e.target.value })} />
+          <div className="mb-3">
+            <button className="btn btn-primary" onClick={abrirModalCrear}>
+              <i className="fas fa-plus me-2"></i>Agregar Banco
+            </button>
+          </div>
+
+          {loading && <div className="alert alert-info">Cargando...</div>}
+
+          <DataTable
+            data={bancos}
+            columns={bancosColumns}
+            itemsPerPage={10}
+            loading={loading}
+            onEdit={editarBanco}
+            onDelete={eliminarBanco}
+            showActions={true}
+            emptyMessage="No hay bancos"
+          />
+        </div>
+      </div>
+
+      {/* Modal */}
+      <div className={`modal fade ${showModal ? 'show' : ''}`} style={{ display: showModal ? 'block' : 'none' }} tabIndex={-1}>
+        <div className="modal-dialog">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h5 className="modal-title">{editingId ? 'Editar Banco' : 'Crear Banco'}</h5>
+              <button type="button" className="btn-close" onClick={cerrarModal}></button>
+            </div>
+            <div className="modal-body">
+              <div className="mb-3">
+                <label className="form-label">Nombre</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  value={form.Nombre}
+                  onChange={(e) => setForm({ ...form, Nombre: e.target.value })}
+                  placeholder="Ingrese nombre del banco"
+                />
               </div>
-              <div className="col-md-5">
-                <input className="form-control" placeholder="Dirección" value={form.Direccion} onChange={(e) => setForm({ ...form, Direccion: e.target.value })} />
+              <div className="mb-3">
+                <label className="form-label">Dirección</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  value={form.Direccion}
+                  onChange={(e) => setForm({ ...form, Direccion: e.target.value })}
+                  placeholder="Ingrese dirección del banco"
+                />
               </div>
-              <div className="col-md-2 d-flex gap-2">
-                {editingId ? (
-                  <>
-                    <button className="btn btn-warning" onClick={() => actualizarBanco(editingId)} disabled={loading}>Actualizar</button>
-                    <button className="btn btn-secondary" onClick={() => { setEditingId(null); setForm({ Nombre: "", Direccion: "" }); }} disabled={loading}>Cancelar</button>
-                  </>
-                ) : (
-                  <button className="btn btn-success" onClick={crearBanco} disabled={loading}>Crear</button>
-                )}
-              </div>
+            </div>
+            <div className="modal-footer">
+              <button type="button" className="btn btn-secondary" onClick={cerrarModal} disabled={loading}>
+                Cancelar
+              </button>
+              {editingId ? (
+                <button type="button" className="btn btn-warning" onClick={() => actualizarBanco(editingId)} disabled={loading}>
+                  {loading ? 'Actualizando...' : 'Actualizar'}
+                </button>
+              ) : (
+                <button type="button" className="btn btn-success" onClick={crearBanco} disabled={loading}>
+                  {loading ? 'Creando...' : 'Crear'}
+                </button>
+              )}
             </div>
           </div>
         </div>
-
-        {loading && <div className="alert alert-info">Cargando...</div>}
-
-        <DataTable
-          data={bancos}
-          columns={bancosColumns}
-          itemsPerPage={10}
-          loading={loading}
-          onEdit={editarBanco}
-          onDelete={eliminarBanco}
-          showActions={true}
-          emptyMessage="No hay bancos"
-        />
-        </div>
       </div>
+
+      {/* Modal backdrop */}
+      {showModal && <div className="modal-backdrop fade show"></div>}
     </>
   );
 }

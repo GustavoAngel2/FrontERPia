@@ -1,9 +1,19 @@
 import { useState, useEffect } from "react";
 import type { defaultApiResponse } from "../../../data/models/response.model";
 import type { Receta, InsertReceta, UpdateReceta } from "../../../data/models/receta.model";
+import type { GetDetalleReceta, InsertDetalleReceta, UpdateDetalleReceta } from "../../../data/models/detalleReceta.model";
 import { useAuth } from "../../../utils/auth";
-import { recetasService } from "../../../utils/dataService";
+import { recetasService, detalleRecetaService } from "../../../utils/dataService";
 import DataTable, { type Column } from "../../ui/DataTable";
+interface DetalleReceta {
+    Id: number;
+    IdReceta: number;
+    Insumo: string;
+    Cantidad: number;
+    UsuarioRegistra: number;
+    UsuarioActualiza: number;
+}
+
 
 function RecetasView() {
     const { user, isLogged } = useAuth();
@@ -14,6 +24,15 @@ function RecetasView() {
     const [formData, setFormData] = useState({
         nombre: ""
     });
+    const [showModal, setShowModal] = useState(false);
+    const [modalView, setModalView] = useState<"receta" | "detalle">("receta");
+    const [currentRecetaId, setCurrentRecetaId] = useState<number | null>(null);
+    const [detalles, setDetalles] = useState<DetalleReceta[]>([]);
+    const [detalleFormData, setDetalleFormData] = useState({
+        insumo: "",
+        cantidad: 0
+    });
+    const [editingDetalleId, setEditingDetalleId] = useState<number | null>(null);
 
     const recetasColumns: Column<Receta>[] = [
         { key: "Id", label: "ID", width: "60px" },
@@ -37,17 +56,23 @@ function RecetasView() {
         obtenerRecetas();
     }, []);
 
-    const obtenerRecetas = async () => {
+    const obtenerRecetas = async (): Promise<Receta[] | null> => {
         try {
             setLoading(true);
             const data: defaultApiResponse = await recetasService.obtenerRecetas();
             console.log("respuesta:", data);
             if (data.Response?.data && Array.isArray(data.Response.data)) {
-                setRecetas(data.Response.data as Receta[]);
+                const list = data.Response.data as Receta[];
+                setRecetas(list);
+                setResponse(data);
+                return list;
             }
+            setRecetas([]);
             setResponse(data);
+            return [];
         } catch (error) {
             console.error("Error al obtener recetas:", error);
+            return null;
         } finally {
             setLoading(false);
         }
@@ -66,8 +91,15 @@ function RecetasView() {
                 usuarioActualiza: usuarioId || 0
             };
             await recetasService.crearReceta(payload);
+            // Fetch fresh list and pick the latest created receta
+            const lista = await obtenerRecetas();
+            const latestReceta = lista && lista.length > 0 ? lista[lista.length - 1] : (recetas[recetas.length - 1] || { Id: 0 });
+            if (latestReceta && latestReceta.Id) {
+                setCurrentRecetaId(latestReceta.Id);
+                setModalView("detalle");
+                await obtenerDetalles(latestReceta.Id);
+            }
             setFormData({ nombre: "" });
-            await obtenerRecetas();
         } catch (error) {
             console.error("Error al crear receta:", error);
             alert("Error al crear la receta");
@@ -75,6 +107,8 @@ function RecetasView() {
             setLoading(false);
         }
     };
+
+    // Removed auto-selection effect to avoid unexpected recipe selection
 
     const actualizarReceta = async (id: number) => {
         if (!formData.nombre.trim()) {
@@ -91,6 +125,7 @@ function RecetasView() {
             await recetasService.actualizarReceta(id, payload);
             setFormData({ nombre: "" });
             setEditingId(null);
+            setShowModal(false);
             await obtenerRecetas();
         } catch (error) {
             console.error("Error al actualizar receta:", error);
@@ -105,8 +140,33 @@ function RecetasView() {
         setFormData({
             nombre: receta.Nombre
         });
+        setShowModal(true);
     };
 
+    const abrirModalCrear = () => {
+        setEditingId(null);
+        setFormData({ nombre: "" });
+        setShowModal(true);
+    };
+
+    const cerrarModal = () => {
+        setShowModal(false);
+        setEditingId(null);
+        setFormData({ nombre: "" });
+        setModalView("receta");
+        setCurrentRecetaId(null);
+        setDetalles([]);
+        setDetalleFormData({ insumo: "", cantidad: 0 });
+        setEditingDetalleId(null);
+    };
+
+    const volverARecetas = () => {
+        setModalView("receta");
+        setCurrentRecetaId(null);
+        setDetalles([]);
+        setDetalleFormData({ insumo: "", cantidad: 0 });
+        setEditingDetalleId(null);
+    };
     const eliminarReceta = async (id: number) => {
         if (!window.confirm("¿Estás seguro de eliminar esta receta?")) return;
         try {
@@ -125,6 +185,91 @@ function RecetasView() {
         setFormData({ nombre: "" });
     };
 
+    const obtenerDetalles = async (idReceta: number) => {
+        try {
+            setLoading(true);
+            const payload: GetDetalleReceta = { idReceta };
+            const data: defaultApiResponse = await detalleRecetaService.obtenerDetallesReceta(payload);
+            if (data.Response?.data && Array.isArray(data.Response.data)) {
+                setDetalles(data.Response.data as DetalleReceta[]);
+            }
+        } catch (error) {
+            console.error("Error al obtener detalles:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const crearDetalle = async () => {
+        if (!currentRecetaId) return;
+        if (!detalleFormData.insumo.trim() || detalleFormData.cantidad <= 0) {
+            alert("Ingresa insumo y cantidad válidos");
+            return;
+        }
+        try {
+            setLoading(true);
+            const payload: InsertDetalleReceta = {
+                idReceta: currentRecetaId,
+                insumo: detalleFormData.insumo,
+                cantidad: detalleFormData.cantidad,
+                usuarioActualiza: usuarioId || 0
+            };
+            await detalleRecetaService.crearDetalleReceta(payload);
+            setDetalleFormData({ insumo: "", cantidad: 0 });
+            await obtenerDetalles(currentRecetaId);
+        } catch (error) {
+            console.error("Error al crear detalle:", error);
+            alert("Error al crear el detalle");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const actualizarDetalle = async (id: number) => {
+        if (!detalleFormData.insumo.trim() || detalleFormData.cantidad <= 0) {
+            alert("Ingresa insumo y cantidad válidos");
+            return;
+        }
+        try {
+            setLoading(true);
+            const payload: UpdateDetalleReceta = {
+                id,
+                insumo: detalleFormData.insumo,
+                cantidad: detalleFormData.cantidad,
+                usuarioActualiza: usuarioId || 0
+            };
+            await detalleRecetaService.actualizarDetalleReceta(payload);
+            setDetalleFormData({ insumo: "", cantidad: 0 });
+            setEditingDetalleId(null);
+            if (currentRecetaId) await obtenerDetalles(currentRecetaId);
+        } catch (error) {
+            console.error("Error al actualizar detalle:", error);
+            alert("Error al actualizar el detalle");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const editarDetalle = (detalle: DetalleReceta) => {
+        setEditingDetalleId(detalle.Id);
+        setDetalleFormData({
+            insumo: detalle.Insumo,
+            cantidad: detalle.Cantidad
+        });
+    };
+
+    const eliminarDetalle = async (id: number) => {
+        if (!window.confirm("¿Estás seguro de eliminar este detalle?")) return;
+        try {
+            setLoading(true);
+            await detalleRecetaService.eliminarDetalleReceta(id);
+            if (currentRecetaId) await obtenerDetalles(currentRecetaId);
+        } catch (error) {
+            console.error("Error al eliminar detalle:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <>
@@ -141,53 +286,10 @@ function RecetasView() {
                     <div className="container mt-4">
                         <h2 className="mb-4">Gestión de Recetas</h2>
 
-                        {/* Formulario Create/Update */}
-                        <div className="card shadow-sm mb-4">
-                            <div className="card-header bg-primary text-white">
-                                <h5 className="mb-0">{editingId ? "Editar Receta" : "Crear Nueva Receta"}</h5>
-                            </div>
-                            <div className="card-body">
-                                <div className="row">
-                                    <div className="col-md-8 mb-3">
-                                        <label className="form-label">Nombre de la Receta</label>
-                                        <input
-                                            type="text"
-                                            className="form-control"
-                                            value={formData.nombre}
-                                            onChange={(e) => setFormData({...formData, nombre: e.target.value})}
-                                            placeholder="Ingrese el nombre de la receta"
-                                        />
-                                    </div>
-                                </div>
-                                <div className="d-flex gap-2">
-                                    {editingId ? (
-                                        <>
-                                            <button 
-                                                className="btn btn-warning"
-                                                onClick={() => actualizarReceta(editingId)}
-                                                disabled={loading}
-                                            >
-                                                Actualizar
-                                            </button>
-                                            <button 
-                                                className="btn btn-secondary"
-                                                onClick={cancelarEdicion}
-                                                disabled={loading}
-                                            >
-                                                Cancelar
-                                            </button>
-                                        </>
-                                    ) : (
-                                        <button 
-                                            className="btn btn-success"
-                                            onClick={crearReceta}
-                                            disabled={loading}
-                                        >
-                                            Crear Receta
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
+                        <div className="mb-3">
+                            <button className="btn btn-primary" onClick={abrirModalCrear}>
+                                <i className="fas fa-plus me-2"></i>Agregar Receta
+                            </button>
                         </div>
 
                         {loading && (
@@ -206,13 +308,144 @@ function RecetasView() {
                             itemsPerPage={10}
                             loading={loading}
                             onEdit={editarReceta}
-                            onDelete={eliminarReceta}
                             showActions={true}
                             emptyMessage="No hay recetas disponibles. Crea una nueva receta para comenzar."
                         />
                     </div>
                 )}
             </div>
+
+            {/* Modal */}
+            <div className={`modal fade ${showModal ? 'show' : ''}`} style={{ display: showModal ? 'block' : 'none' }} tabIndex={-1}>
+                <div className="modal-dialog">
+                    <div className="modal-content">
+                        <div className="modal-header">
+                            <h5 className="modal-title">
+                                {modalView === "receta" 
+                                    ? (editingId ? 'Editar Receta' : 'Crear Receta')
+                                    : `Detalles - ${recetas.find(r => r.Id === currentRecetaId)?.Nombre}`
+                                }
+                            </h5>
+                            <button type="button" className="btn-close" onClick={cerrarModal}></button>
+                        </div>
+                        <div className="modal-body">
+                            {modalView === "receta" ? (
+                                <>
+                                    <div className="mb-3">
+                                        <label className="form-label">Nombre de la Receta</label>
+                                        <input
+                                            type="text"
+                                            className="form-control"
+                                            value={formData.nombre}
+                                            onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+                                            placeholder="Ingrese el nombre de la receta"
+                                        />
+                                    </div>
+                                </>
+                            ) : (
+                                <>
+                                    <div className="mb-3">
+                                        <h6>Agregar Insumo</h6>
+                                        <input
+                                            type="text"
+                                            className="form-control mb-2"
+                                            value={detalleFormData.insumo}
+                                            onChange={(e) => setDetalleFormData({ ...detalleFormData, insumo: e.target.value })}
+                                            placeholder="Nombre del insumo"
+                                        />
+                                        <input
+                                            type="number"
+                                            className="form-control mb-2"
+                                            value={detalleFormData.cantidad}
+                                            onChange={(e) => setDetalleFormData({ ...detalleFormData, cantidad: parseFloat(e.target.value) })}
+                                            placeholder="Cantidad"
+                                        />
+                                        {editingDetalleId ? (
+                                            <button className="btn btn-sm btn-warning" onClick={() => actualizarDetalle(editingDetalleId!)} disabled={loading}>
+                                                {loading ? 'Actualizando...' : 'Actualizar Insumo'}
+                                            </button>
+                                        ) : (
+                                            <button className="btn btn-sm btn-success" onClick={crearDetalle} disabled={loading}>
+                                                {loading ? 'Agregando...' : 'Agregar Insumo'}
+                                            </button>
+                                        )}
+                                        {editingDetalleId && (
+                                            <button className="btn btn-sm btn-secondary ms-2" onClick={() => {
+                                                setEditingDetalleId(null);
+                                                setDetalleFormData({ insumo: "", cantidad: 0 });
+                                            }} disabled={loading}>
+                                                Cancelar
+                                            </button>
+                                        )}
+                                    </div>
+                                    <hr />
+                                    <h6>Insumos de la Receta</h6>
+                                    <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                                        {detalles.length === 0 ? (
+                                            <p className="text-muted">No hay insumos agregados</p>
+                                        ) : (
+                                            <table className="table table-sm">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Insumo</th>
+                                                        <th>Cantidad</th>
+                                                        <th>Acciones</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {detalles.map(detalle => (
+                                                        <tr key={detalle.Id}>
+                                                            <td>{detalle.Insumo}</td>
+                                                            <td>{detalle.Cantidad}</td>
+                                                            <td>
+                                                                <button className="btn btn-sm btn-primary me-1" onClick={() => editarDetalle(detalle)}>
+                                                                    ✎
+                                                                </button>
+                                                                <button className="btn btn-sm btn-danger" onClick={() => eliminarDetalle(detalle.Id)}>
+                                                                    🗑️
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        )}
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                        <div className="modal-footer">
+                            {modalView === "detalle" && (
+                                <button type="button" className="btn btn-secondary" onClick={volverARecetas} disabled={loading}>
+                                    Volver
+                                </button>
+                            )}
+                            {modalView === "receta" && editingId && (
+                                <button type="button" className="btn btn-danger me-auto" onClick={() => eliminarReceta(editingId!)} disabled={loading}>
+                                    {loading ? 'Eliminando...' : '🗑️ Eliminar'}
+                                </button>
+                            )}
+                            <button type="button" className="btn btn-secondary" onClick={cerrarModal} disabled={loading}>
+                                Cancelar
+                            </button>
+                            {modalView === "receta" ? (
+                                editingId ? (
+                                    <button type="button" className="btn btn-warning" onClick={() => actualizarReceta(editingId!)} disabled={loading}>
+                                        {loading ? 'Actualizando...' : 'Actualizar'}
+                                    </button>
+                                ) : (
+                                    <button type="button" className="btn btn-success" onClick={crearReceta} disabled={loading}>
+                                        {loading ? 'Creando...' : 'Crear'}
+                                    </button>
+                                )
+                            ) : null}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Modal backdrop */}
+            {showModal && <div className="modal-backdrop fade show"></div>}
         </>
     );
 }

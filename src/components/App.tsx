@@ -10,7 +10,6 @@ import { Route, createBrowserRouter, createRoutesFromElements, RouterProvider } 
 import { RequireAuth, DisabledUponLogin } from '../utils/auth'
 
 import RecetasView from './pages/recetas/recetas'
-import ChatBot from './ui/ChatBot'
 import { ThemeProvider } from '../context/ThemeContext'
 import ProductosView from './pages/productos/productos'
 import BancosView from './pages/bancos/bancos'
@@ -76,7 +75,6 @@ function App() {
   return (
     <ThemeProvider>
       <RouterProvider router={router} />
-      <ChatBot />
     </ThemeProvider>
   )
 }

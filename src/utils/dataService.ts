@@ -5,6 +5,7 @@ import type { Producto as BancoModel, InsertProducto as InsertBanco, UpdateProdu
 import type { Proveedor, InsertProveedor, UpdateProveedor } from "../data/models/proveedores.model";
 import type { Categoria, InsertCategoria, UpdateCategoria } from "../data/models/categorias.model";
 import type { aiApiResponse } from "../data/models/aiArticles.model";
+import type { GetDetalleReceta, InsertDetalleReceta, UpdateDetalleReceta } from "../data/models/detalleReceta.model";
 
 const API_URL = "http://localhost:5020";
 const AI_API_URL = "http://192.168.54.153:8000";
@@ -205,6 +206,42 @@ export const categoriasService = {
 
   async eliminarCategoria(id: number): Promise<void> {
     await fetch(`${API_URL}/api/Categorias/Delete/`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
+    });
+  },
+};
+
+// ============== DETALLE RECETA SERVICE ==============
+export const detalleRecetaService = {
+  async obtenerDetallesReceta(payload: GetDetalleReceta): Promise<defaultApiResponse> {
+    const res = await fetch(`${API_URL}/api/DetalleReceta/Get`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    return res.json();
+  },
+
+  async crearDetalleReceta(payload: InsertDetalleReceta): Promise<void> {
+    await fetch(`${API_URL}/api/DetalleReceta/Insert`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async actualizarDetalleReceta(payload: UpdateDetalleReceta): Promise<void> {
+    await fetch(`${API_URL}/api/DetalleReceta/Update/`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async eliminarDetalleReceta(id: number): Promise<void> {
+    await fetch(`${API_URL}/api/DetalleReceta/Delete/`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id }),
