@@ -40,12 +40,20 @@ function RecetasView() {
         {
             key: "FechaCreacion",
             label: "Fecha Creación",
-            render: (value) => new Date(value).toLocaleDateString(),
+            render: (value) => {
+                if (!value) return "-";
+                const date = typeof value === 'string' ? new Date(value.split('T')[0]) : new Date(value);
+                return isNaN(date.getTime()) ? "-" : date.toLocaleDateString();
+            },
         },
         {
             key: "FechaActualiza",
             label: "Fecha Actualización",
-            render: (value) => new Date(value).toLocaleDateString(),
+            render: (value) => {
+                if (!value) return "-";
+                const date = typeof value === 'string' ? new Date(value.split('T')[0]) : new Date(value);
+                return isNaN(date.getTime()) ? "-" : date.toLocaleDateString();
+            },
         },
         { key: "UsuarioRegistra", label: "Usuario Registra", width: "120px" },
         { key: "UsuarioActualiza", label: "Usuario Actualiza", width: "120px" },

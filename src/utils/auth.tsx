@@ -3,6 +3,8 @@ import {
   useContext,
   useState,
   useEffect,
+  useCallback,
+  useMemo,
   type ReactNode,
 } from "react";
 import { Navigate } from "react-router-dom";
@@ -52,7 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(false);
   }, []);
 
-  async function login(credentials: Credentials): Promise<boolean> {
+  const login = useCallback(async (credentials: Credentials): Promise<boolean> => {
     try {
       const res = await fetch(`${API_URL}/api/SignIn`, {
         method: "POST",
@@ -84,16 +86,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       toast.error("Error al conectar con el servidor");
       return false;
     }
-  }
+  }, []);
 
-  function logout() {
+  const logout = useCallback(() => {
     setUser(null);
     setIsLogged(false);
     
     // Clear localStorage
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem(LOGIN_KEY);
-  }
+  }, []);
+
+  const value = useMemo(() => ({
+    user,
+    isLogged,
+    login,
+    logout,
+  }), [user, isLogged, login, logout]);
 
   // Don't render until we've checked localStorage
   if (isLoading) {
@@ -101,7 +110,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, isLogged, login, logout }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

@@ -2,13 +2,15 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../../../utils/auth";
 import type { defaultApiResponse } from "../../../data/models/response.model";
 import type { Proveedor, InsertProveedor, UpdateProveedor } from "../../../data/models/proveedores.model";
-import { proveedoresService } from "../../../utils/dataService";
+import type { Producto as BancoModel } from "../../../data/models/bancos.model";
+import { proveedoresService, bancosService } from "../../../utils/dataService";
 import DataTable, { type Column } from "../../ui/DataTable";
 
 function ProveedoresView() {
   const { user, isLogged } = useAuth();
   const [loading, setLoading] = useState(false);
   const [proveedores, setProveedores] = useState<Proveedor[]>([]);
+  const [bancos, setBancos] = useState<BancoModel[]>([]);
   const [response, setResponse] = useState<defaultApiResponse | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState({
@@ -37,14 +39,32 @@ function ProveedoresView() {
     {
       key: "FechaRegistro",
       label: "Fecha Registro",
-      render: (value) => new Date(value).toLocaleDateString(),
+      render: (value) => {
+        if (!value) return "-";
+        const date = typeof value === 'string' ? new Date(value.split('T')[0]) : new Date(value);
+        return isNaN(date.getTime()) ? "-" : date.toLocaleDateString();
+      },
       width: "120px",
     },
   ];
 
   useEffect(() => {
-    if (isLogged) obtenerProveedores();
+    if (isLogged) {
+      obtenerProveedores();
+      obtenerBancos();
+    }
   }, [isLogged]);
+
+  const obtenerBancos = async () => {
+    try {
+      const data: defaultApiResponse = await bancosService.obtenerBancos();
+      if (data.Response?.data && Array.isArray(data.Response.data)) {
+        setBancos(data.Response.data);
+      }
+    } catch (err) {
+      console.error("Error obteniendo bancos:", err);
+    }
+  };
 
   const obtenerProveedores = async () => {
     try {
@@ -213,6 +233,7 @@ function ProveedoresView() {
             itemsPerPage={10}
             loading={loading}
             onEdit={editarProveedor}
+            onDelete={eliminarProveedor}
             showActions={true}
             emptyMessage="No hay proveedores"
           />
@@ -300,14 +321,19 @@ function ProveedoresView() {
                   />
                 </div>
                 <div className="col-md-6">
-                  <label className="form-label">ID Banco</label>
-                  <input
-                    type="number"
+                  <label className="form-label">Banco</label>
+                  <select
                     className="form-control"
                     value={form.IdBanco}
                     onChange={(e) => setForm({ ...form, IdBanco: parseInt(e.target.value) || 0 })}
-                    placeholder="0"
-                  />
+                  >
+                    <option value={0}>Seleccione un banco</option>
+                    {bancos.map((banco) => (
+                      <option key={banco.Id} value={banco.Id}>
+                        {banco.Nombre}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div className="col-md-6">
                   <label className="form-label">Plazo de Pago (días)</label>
@@ -322,11 +348,6 @@ function ProveedoresView() {
               </div>
             </div>
             <div className="modal-footer">
-              {editingId && (
-                <button type="button" className="btn btn-danger me-auto" onClick={() => eliminarProveedor(editingId)} disabled={loading}>
-                  {loading ? 'Eliminando...' : '🗑️ Eliminar'}
-                </button>
-              )}
               <button type="button" className="btn btn-secondary" onClick={cerrarModal} disabled={loading}>
                 Cancelar
               </button>

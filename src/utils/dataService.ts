@@ -9,61 +9,75 @@ import type { GetDetalleReceta, InsertDetalleReceta, UpdateDetalleReceta } from 
 
 const API_URL = "http://localhost:5020";
 const AI_API_URL = "http://192.168.54.153:8000";
+const DEFAULT_HEADERS = { "Content-Type": "application/json" };
+
+// ============== REUSABLE FETCH HELPER ==============
+async function fetchJSON<T>(url: string, options: RequestInit = {}): Promise<T> {
+  const response = await fetch(url, {
+    ...options,
+    headers: { ...DEFAULT_HEADERS, ...(options.headers || {}) },
+  });
+
+  if (!response.ok) {
+    throw new Error(`API error: ${response.status} ${response.statusText}`);
+  }
+
+  return response.json() as Promise<T>;
+}
+
+async function fetchBlob(url: string, options: RequestInit = {}): Promise<Blob> {
+  const response = await fetch(url, {
+    ...options,
+    headers: { ...DEFAULT_HEADERS, ...(options.headers || {}) },
+  });
+
+  if (!response.ok) {
+    throw new Error(`API error: ${response.status} ${response.statusText}`);
+  }
+
+  return response.blob();
+}
 
 // ============== ARTICULOS SERVICE ==============
 export const articulosService = {
-  async consultarArticulos(pregunta: string): Promise<aiApiResponse> {
-    const res = await fetch(`${AI_API_URL}/ia/consultar`, {
+  consultarArticulos(pregunta: string): Promise<aiApiResponse> {
+    return fetchJSON(`${AI_API_URL}/ia/consultar`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
       body: JSON.stringify({ pregunta }),
     });
-    return res.json();
   },
 
-  async descargarPDF(pregunta: string): Promise<Blob> {
-    const res = await fetch(`${AI_API_URL}/ia/pdf`, {
+  descargarPDF(pregunta: string): Promise<Blob> {
+    return fetchBlob(`${AI_API_URL}/ia/pdf`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
       body: JSON.stringify({ pregunta }),
     });
-
-    if (!res.ok) throw new Error("Error generando PDF");
-    return res.blob();
   },
 };
 
 // ============== PRODUCTOS SERVICE ==============
 export const productosService = {
-  async obtenerProductos(): Promise<defaultApiResponse> {
-    const res = await fetch(`${API_URL}/api/Productos/Get`, { method: "GET" });
-    return res.json();
+  obtenerProductos(): Promise<defaultApiResponse> {
+    return fetchJSON(`${API_URL}/api/Productos/Get`, { method: "GET" });
   },
 
-  async crearProducto(payload: InsertProducto): Promise<void> {
-    await fetch(`${API_URL}/api/Productos/Insert`, {
+  crearProducto(payload: InsertProducto): Promise<void> {
+    return fetchJSON(`${API_URL}/api/Productos/Insert`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
   },
 
-  async actualizarProducto(payload: UpdateProducto): Promise<void> {
-    await fetch(`${API_URL}/api/Productos/Update/`, {
+  actualizarProducto(payload: UpdateProducto): Promise<void> {
+    return fetchJSON(`${API_URL}/api/Productos/Update/`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
   },
 
-  async eliminarProducto(id: number): Promise<void> {
-    await fetch(`${API_URL}/api/Productos/Delete/`, {
+  eliminarProducto(id: number): Promise<void> {
+    return fetchJSON(`${API_URL}/api/Productos/Delete/`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id }),
     });
   },
@@ -71,79 +85,54 @@ export const productosService = {
 
 // ============== RECETAS SERVICE ==============
 export const recetasService = {
-  async obtenerRecetas(): Promise<defaultApiResponse> {
-    const res = await fetch(`${API_URL}/api/Recetas/Get`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-    return res.json();
+  obtenerRecetas(): Promise<defaultApiResponse> {
+    return fetchJSON(`${API_URL}/api/Recetas/Get`, { method: "GET" });
   },
 
-  async crearReceta(payload: InsertReceta): Promise<void> {
-    const res = await fetch(`${API_URL}/api/Recetas/Insert`, {
+  crearReceta(payload: InsertReceta): Promise<void> {
+    return fetchJSON(`${API_URL}/api/Recetas/Insert`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
       body: JSON.stringify(payload),
     });
-
-    if (!res.ok) throw new Error("Error creando receta");
   },
 
-  async actualizarReceta(id: number, payload: UpdateReceta): Promise<void> {
-    const res = await fetch(`${API_URL}/api/Recetas/Update/${id}`, {
+  actualizarReceta(id: number, payload: UpdateReceta): Promise<void> {
+    return fetchJSON(`${API_URL}/api/Recetas/Update/${id}`, {
       method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
       body: JSON.stringify(payload),
     });
-
-    if (!res.ok) throw new Error("Error actualizando receta");
   },
 
-  async eliminarReceta(id: number): Promise<void> {
-    const res = await fetch(`${API_URL}/api/Recetas/Delete/${id}`, {
+  eliminarReceta(id: number): Promise<void> {
+    return fetchJSON(`${API_URL}/api/Recetas/Delete/${id}`, {
       method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-      },
     });
-
-    if (!res.ok) throw new Error("Error eliminando receta");
   },
 };
 
 // ============== BANCOS SERVICE ==============
 export const bancosService = {
-  async obtenerBancos(): Promise<defaultApiResponse> {
-    const res = await fetch(`${API_URL}/api/Bancos/Get`, { method: "GET" });
-    return res.json();
+  obtenerBancos(): Promise<defaultApiResponse> {
+    return fetchJSON(`${API_URL}/api/Bancos/Get`, { method: "GET" });
   },
 
-  async crearBanco(payload: InsertBanco): Promise<void> {
-    await fetch(`${API_URL}/api/Bancos/Insert`, {
+  crearBanco(payload: InsertBanco): Promise<void> {
+    return fetchJSON(`${API_URL}/api/Bancos/Insert`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
   },
 
-  async actualizarBanco(payload: UpdateBanco): Promise<void> {
-    await fetch(`${API_URL}/api/Bancos/Update/`, {
+  actualizarBanco(payload: UpdateBanco): Promise<void> {
+    return fetchJSON(`${API_URL}/api/Bancos/Update/`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
   },
 
-  async eliminarBanco(id: number): Promise<void> {
-    await fetch(`${API_URL}/api/Bancos/Delete/`, {
+  eliminarBanco(id: number): Promise<void> {
+    return fetchJSON(`${API_URL}/api/Bancos/Delete/`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id }),
     });
   },
@@ -151,31 +140,27 @@ export const bancosService = {
 
 // ============== PROVEEDORES SERVICE ==============
 export const proveedoresService = {
-  async obtenerProveedores(): Promise<defaultApiResponse> {
-    const res = await fetch(`${API_URL}/api/Proveedores/Get`, { method: "GET" });
-    return res.json();
+  obtenerProveedores(): Promise<defaultApiResponse> {
+    return fetchJSON(`${API_URL}/api/Proveedores/Get`, { method: "GET" });
   },
 
-  async crearProveedor(payload: InsertProveedor): Promise<void> {
-    await fetch(`${API_URL}/api/Proveedores/Insert`, {
+  crearProveedor(payload: InsertProveedor): Promise<void> {
+    return fetchJSON(`${API_URL}/api/Proveedores/Insert`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
   },
 
-  async actualizarProveedor(payload: UpdateProveedor): Promise<void> {
-    await fetch(`${API_URL}/api/Proveedores/Update/`, {
+  actualizarProveedor(payload: UpdateProveedor): Promise<void> {
+    return fetchJSON(`${API_URL}/api/Proveedores/Update/`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
   },
 
-  async eliminarProveedor(id: number): Promise<void> {
-    await fetch(`${API_URL}/api/Proveedores/Delete/`, {
+  eliminarProveedor(id: number): Promise<void> {
+    return fetchJSON(`${API_URL}/api/Proveedores/Delete/`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id }),
     });
   },
@@ -183,31 +168,27 @@ export const proveedoresService = {
 
 // ============== CATEGORIAS SERVICE ==============
 export const categoriasService = {
-  async obtenerCategorias(): Promise<defaultApiResponse> {
-    const res = await fetch(`${API_URL}/api/Categorias/Get`, { method: "GET" });
-    return res.json();
+  obtenerCategorias(): Promise<defaultApiResponse> {
+    return fetchJSON(`${API_URL}/api/Categorias/Get`, { method: "GET" });
   },
 
-  async crearCategoria(payload: InsertCategoria): Promise<void> {
-    await fetch(`${API_URL}/api/Categorias/Insert`, {
+  crearCategoria(payload: InsertCategoria): Promise<void> {
+    return fetchJSON(`${API_URL}/api/Categorias/Insert`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
   },
 
-  async actualizarCategoria(payload: UpdateCategoria): Promise<void> {
-    await fetch(`${API_URL}/api/Categorias/Update/`, {
+  actualizarCategoria(payload: UpdateCategoria): Promise<void> {
+    return fetchJSON(`${API_URL}/api/Categorias/Update/`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
   },
 
-  async eliminarCategoria(id: number): Promise<void> {
-    await fetch(`${API_URL}/api/Categorias/Delete/`, {
+  eliminarCategoria(id: number): Promise<void> {
+    return fetchJSON(`${API_URL}/api/Categorias/Delete/`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id }),
     });
   },
@@ -215,35 +196,30 @@ export const categoriasService = {
 
 // ============== DETALLE RECETA SERVICE ==============
 export const detalleRecetaService = {
-  async obtenerDetallesReceta(payload: GetDetalleReceta): Promise<defaultApiResponse> {
-    const res = await fetch(`${API_URL}/api/DetalleReceta/Get`, {
+  obtenerDetallesReceta(payload: GetDetalleReceta): Promise<defaultApiResponse> {
+    return fetchJSON(`${API_URL}/api/DetalleReceta/Get`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-    return res.json();
   },
 
-  async crearDetalleReceta(payload: InsertDetalleReceta): Promise<void> {
-    await fetch(`${API_URL}/api/DetalleReceta/Insert`, {
+  crearDetalleReceta(payload: InsertDetalleReceta): Promise<void> {
+    return fetchJSON(`${API_URL}/api/DetalleReceta/Insert`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
   },
 
-  async actualizarDetalleReceta(payload: UpdateDetalleReceta): Promise<void> {
-    await fetch(`${API_URL}/api/DetalleReceta/Update/`, {
+  actualizarDetalleReceta(payload: UpdateDetalleReceta): Promise<void> {
+    return fetchJSON(`${API_URL}/api/DetalleReceta/Update/`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
   },
 
-  async eliminarDetalleReceta(id: number): Promise<void> {
-    await fetch(`${API_URL}/api/DetalleReceta/Delete/`, {
+  eliminarDetalleReceta(id: number): Promise<void> {
+    return fetchJSON(`${API_URL}/api/DetalleReceta/Delete/`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id }),
     });
   },

@@ -1,5 +1,5 @@
 // Adjust the path as necessary
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../utils/auth";
 import { useTheme } from "../../context/ThemeContext";
@@ -8,17 +8,32 @@ import "./navBar.css";
 const NavBar = () => {
   const { isLogged, user, logout } = useAuth();
   const { isDarkMode, toggleTheme } = useTheme();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const toggleSidebar = useCallback(() => {
+    setSidebarOpen((prev) => !prev);
+  }, []);
+
+  const closeSidebar = useCallback(() => {
+    setSidebarOpen(false);
+  }, []);
 
   return (
     <>
       <nav className="navbar">
         <div className="navbar-content">
-          {/* Brand (Left side) */}
+          {/* Left side - Hamburger + Brand */}
           <div className="navbar-left">
+            <button
+              className="navbar-hamburger"
+              onClick={toggleSidebar}
+              title="Alternar menú"
+            >
+              <i className={`bi ${sidebarOpen ? 'bi-x-lg' : 'bi-list'}`}></i>
+            </button>
             <Link className="navbar-brand" to="/">
               <i className="bi bi-app"></i>
-              <span>App</span>
+              <span>Admin Panel</span>
             </Link>
           </div>
 
@@ -36,11 +51,14 @@ const NavBar = () => {
               {!isLogged ? (
                 <Link to="login" className="navbar-link">
                   <i className="bi bi-person-fill"></i>
-                  <span>Iniciar sesion</span>
+                  <span>Iniciar sesión</span>
                 </Link>
               ) : (
                 <div className="user-menu">
-                  <span className="user-name">{user?.NombrePersona}</span>
+                  <div className="user-info">
+                    <span className="user-name">{user?.NombrePersona}</span>
+                    <span className="user-status">Conectado</span>
+                  </div>
                   <button className="logout-btn" onClick={logout} title="Cerrar sesión">
                     <i className="bi bi-box-arrow-right"></i>
                   </button>
@@ -53,46 +71,36 @@ const NavBar = () => {
 
       {/* Sidebar Navigation */}
       <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
-        <div className="sidebar-header">
-          <h3>Menu</h3>
-          <button
-            className="sidebar-toggle-close"
-            onClick={() => setSidebarOpen(false)}
-            title="Cerrar sidebar"
-          >
-            <i className="bi bi-x-lg"></i>
-          </button>
-        </div>
 
         <nav className="sidebar-nav">
-          <Link to="/" className="sidebar-link">
+          <Link to="/" className="sidebar-link" onClick={closeSidebar}>
             <i className="bi bi-house-fill"></i>
-            <span>Home</span>
+            <span>Inicio</span>
           </Link>
 
           {isLogged && (
             <>
-              <Link to="/productos" className="sidebar-link">
+              <Link to="/productos" className="sidebar-link" onClick={closeSidebar}>
                 <i className="bi bi-box-seam"></i>
                 <span>Productos</span>
               </Link>
 
-              <Link to="/recetas" className="sidebar-link">
+              <Link to="/recetas" className="sidebar-link" onClick={closeSidebar}>
                 <i className="bi bi-book-half"></i>
                 <span>Recetas</span>
               </Link>
 
-              <Link to="/categorias" className="sidebar-link">
+              <Link to="/categorias" className="sidebar-link" onClick={closeSidebar}>
                 <i className="bi bi-tags-fill"></i>
-                <span>Categorias</span>
+                <span>Categorías</span>
               </Link>
 
-              <Link to="/proveedores" className="sidebar-link">
+              <Link to="/proveedores" className="sidebar-link" onClick={closeSidebar}>
                 <i className="bi bi-building"></i>
                 <span>Proveedores</span>
               </Link>
 
-              <Link to="/bancos" className="sidebar-link">
+              <Link to="/bancos" className="sidebar-link" onClick={closeSidebar}>
                 <i className="bi bi-bank"></i>
                 <span>Bancos</span>
               </Link>
@@ -100,17 +108,6 @@ const NavBar = () => {
           )}
         </nav>
       </aside>
-
-      {/* Sidebar Toggle Button */}
-      {!sidebarOpen && (
-        <button
-          className="sidebar-toggle"
-          onClick={() => setSidebarOpen(true)}
-          title="Abrir sidebar"
-        >
-          <i className="bi bi-list"></i>
-        </button>
-      )}
     </>
   );
 };

@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useCallback, useRef, useMemo } from 'react'
 import './ChatBot.css'
 
 interface Message {
@@ -8,9 +8,36 @@ interface Message {
   timestamp: Date
 }
 
+interface ChatBotResponse {
+  respuesta: string
+  sql?: string
+  posible: boolean
+  evaluacion_posibilidad?: string
+  resumen?: string | null
+  datos?: {
+    columnas: string[]
+    filas: unknown[]
+    total_registros: number
+  }
+}
+
 interface ChatBotProps {
   variant?: 'floating' | 'inline'
 }
+
+const MessageItem = React.memo<{ message: Message }>(({ message }) => (
+  <div className={`chatbot-message ${message.sender}`}>
+    <div className="message-content">{message.text}</div>
+    <span className="message-time">
+      {message.timestamp.toLocaleTimeString('es-ES', {
+        hour: '2-digit',
+        minute: '2-digit',
+      })}
+    </span>
+  </div>
+))
+
+MessageItem.displayName = 'MessageItem'
 
 const ChatBot: React.FC<ChatBotProps> = ({ variant = 'floating' }) => {
   const [isOpen, setIsOpen] = useState(variant === 'inline')
@@ -24,8 +51,18 @@ const ChatBot: React.FC<ChatBotProps> = ({ variant = 'floating' }) => {
   ])
   const [inputValue, setInputValue] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const handleSendMessage = async (e: React.FormEvent) => {
+  const handleToggleOpen = useCallback(() => {
+    setIsOpen((prev) => !prev)
+  }, [])
+
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setInputValue(e.target.value)
+  }, [])
+
+  const handleSendMessage = useCallback(async (e: React.FormEvent) => {
     e.preventDefault()
 
     if (!inputValue.trim()) return
@@ -42,18 +79,64 @@ const ChatBot: React.FC<ChatBotProps> = ({ variant = 'floating' }) => {
     setInputValue('')
     setIsLoading(true)
 
-    // Simulate bot response delay
-    setTimeout(() => {
+    try {
+      // Call the chatbot API
+      const response = await fetch('http://127.0.0.1:5100/ia/consulta', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          pregunta: inputValue,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const data: ChatBotResponse = await response.json()
+
+      // Extract the response text
+      const botResponseText = data.respuesta || 'No se pudo obtener una respuesta'
+
       const botMessage: Message = {
         id: (Date.now() + 1).toString(),
-        text: '',
+        text: botResponseText,
+        sender: 'bot',
+        timestamp: new Date(),
+      }
+
+      setMessages((prev) => [...prev, botMessage])
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido'
+      const botMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        text: `Error al conectar con el asistente: ${errorMessage}`,
         sender: 'bot',
         timestamp: new Date(),
       }
       setMessages((prev) => [...prev, botMessage])
+    } finally {
       setIsLoading(false)
-    }, 500)
-  }
+    }
+  }, [inputValue])
+
+  // Cleanup timeout on unmount
+  React.useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+      }
+    }
+  }, [])
+
+  // Auto-scroll to bottom
+  React.useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages])
+
+  const isInputDisabled = useMemo(() => !inputValue.trim() || isLoading, [inputValue, isLoading])
 
   return (
     <>
@@ -61,10 +144,10 @@ const ChatBot: React.FC<ChatBotProps> = ({ variant = 'floating' }) => {
       {variant === 'floating' && (
         <button
           className="chatbot-floating-btn"
-          onClick={() => setIsOpen(!isOpen)}
+          onClick={handleToggleOpen}
           title="Abrir chat"
         >
-          <i className="bi bi-chat-dots-fill"></i>
+          <i className="bi bi-chat-dots-fill" />
         </button>
       )}
 
@@ -81,10 +164,10 @@ const ChatBot: React.FC<ChatBotProps> = ({ variant = 'floating' }) => {
             {variant === 'floating' && (
               <button
                 className="chatbot-close-btn"
-                onClick={() => setIsOpen(false)}
+                onClick={handleToggleOpen}
                 title="Cerrar"
               >
-                <i className="bi bi-x-lg"></i>
+                <i className="bi bi-x-lg" />
               </button>
             )}
           </div>
@@ -92,30 +175,18 @@ const ChatBot: React.FC<ChatBotProps> = ({ variant = 'floating' }) => {
           {/* Messages Container */}
           <div className="chatbot-messages">
             {messages.map((message) => (
-              <div
-                key={message.id}
-                className={`chatbot-message ${message.sender}`}
-              >
-                <div className="message-content">
-                  {message.text}
-                </div>
-                <span className="message-time">
-                  {message.timestamp.toLocaleTimeString('es-ES', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
-                </span>
-              </div>
+              <MessageItem key={message.id} message={message} />
             ))}
             {isLoading && (
               <div className="chatbot-message bot">
                 <div className="message-content loading">
-                  <span></span>
-                  <span></span>
-                  <span></span>
+                  <span />
+                  <span />
+                  <span />
                 </div>
               </div>
             )}
+            <div ref={messagesEndRef} />
           </div>
 
           {/* Input Form */}
@@ -125,16 +196,16 @@ const ChatBot: React.FC<ChatBotProps> = ({ variant = 'floating' }) => {
               className="chatbot-input"
               placeholder="Escribe tu mensaje..."
               value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
+              onChange={handleInputChange}
               disabled={isLoading}
             />
             <button
               type="submit"
               className="chatbot-send-btn"
-              disabled={!inputValue.trim() || isLoading}
+              disabled={isInputDisabled}
               title="Enviar"
             >
-              <i className="bi bi-send-fill"></i>
+              <i className="bi bi-send-fill" />
             </button>
           </form>
         </div>
@@ -143,4 +214,4 @@ const ChatBot: React.FC<ChatBotProps> = ({ variant = 'floating' }) => {
   )
 }
 
-export default ChatBot
+export default React.memo(ChatBot)

@@ -20,12 +20,20 @@ function CategoriasView() {
     {
       key: "FechaRegistro",
       label: "Fecha Registro",
-      render: (value) => new Date(value).toLocaleDateString(),
+      render: (value) => {
+        if (!value) return "-";
+        const date = typeof value === 'string' ? new Date(value.split('T')[0]) : new Date(value);
+        return isNaN(date.getTime()) ? "-" : date.toLocaleDateString();
+      },
     },
     {
       key: "FechaActualiza",
       label: "Fecha Actualiza",
-      render: (value) => new Date(value).toLocaleDateString(),
+      render: (value) => {
+        if (!value) return "-";
+        const date = typeof value === 'string' ? new Date(value.split('T')[0]) : new Date(value);
+        return isNaN(date.getTime()) ? "-" : date.toLocaleDateString();
+      },
     },
   ];
 

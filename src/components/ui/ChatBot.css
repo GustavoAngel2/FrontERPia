@@ -268,7 +268,42 @@
 }
 
 /* Responsive Design */
-@media (max-width: 480px) {
+
+/* Small Mobile (< 480px) */
+@media (max-width: 479px) {
+  .chatbot-window {
+    width: calc(100vw - 30px);
+    height: 55vh;
+    bottom: 70px;
+    right: 15px;
+    left: 15px;
+    border-radius: 12px;
+  }
+
+  .message-content {
+    max-width: 85%;
+    font-size: 0.85rem;
+  }
+
+  .chatbot-floating-btn {
+    width: 48px;
+    height: 48px;
+    font-size: 20px;
+    bottom: 20px;
+    right: 15px;
+  }
+
+  .chatbot-header h3 {
+    font-size: 1rem;
+  }
+
+  .chatbot-input {
+    font-size: 0.85rem;
+  }
+}
+
+/* Mobile (480px - 767px) */
+@media (min-width: 480px) and (max-width: 767px) {
   .chatbot-window {
     width: calc(100vw - 40px);
     height: 60vh;
@@ -278,12 +313,76 @@
   }
 
   .message-content {
-    max-width: 90%;
+    max-width: 88%;
+    font-size: 0.9rem;
   }
 
   .chatbot-floating-btn {
     width: 50px;
     height: 50px;
-    font-size: 20px;
+    font-size: 22px;
+  }
+}
+
+/* Tablet (768px - 991px) */
+@media (min-width: 768px) and (max-width: 991px) {
+  .chatbot-window {
+    width: 400px;
+    height: 65vh;
+    bottom: 80px;
+    right: 30px;
+  }
+
+  .message-content {
+    max-width: 92%;
+    font-size: 0.95rem;
+  }
+
+  .chatbot-floating-btn {
+    width: 55px;
+    height: 55px;
+    font-size: 24px;
+  }
+}
+
+/* Desktop (992px - 1439px) */
+@media (min-width: 992px) and (max-width: 1439px) {
+  .chatbot-window {
+    width: 420px;
+    height: 70vh;
+  }
+}
+
+/* Large Desktop (1440px - 1919px) */
+@media (min-width: 1440px) and (max-width: 1919px) {
+  .chatbot-window {
+    width: 450px;
+    height: 72vh;
+  }
+
+  .chatbot-messages {
+    font-size: 1rem;
+  }
+}
+
+/* 4K and Ultra-wide (1920px+) */
+@media (min-width: 1920px) {
+  .chatbot-window {
+    width: 480px;
+    height: 75vh;
+  }
+
+  .message-content {
+    font-size: 1.05rem;
+  }
+
+  .chatbot-header h3 {
+    font-size: 1.2rem;
+  }
+
+  .chatbot-floating-btn {
+    width: 60px;
+    height: 60px;
+    font-size: 26px;
   }
 }

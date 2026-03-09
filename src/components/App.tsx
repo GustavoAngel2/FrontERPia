@@ -1,28 +1,36 @@
+import { lazy, Suspense, useMemo } from 'react'
+import { Route, createBrowserRouter, createRoutesFromElements, RouterProvider } from 'react-router-dom'
 import RootLayout from '../routeLayout'
-import Dashboard from './pages/dashboard'
+import { RequireAuth, DisabledUponLogin } from '../utils/auth'
+import { ThemeProvider } from '../context/ThemeContext'
 import Login from './pages/login/login'
 
-import 'bootstrap/dist/css/bootstrap.min.css'
-import 'bootstrap-icons/font/bootstrap-icons.css'
-import 'bootstrap/dist/js/bootstrap.bundle.min.js'
+// Lazy load page components for code splitting
+const Dashboard = lazy(() => import('./pages/dashboard'))
+const RecetasView = lazy(() => import('./pages/recetas/recetas'))
+const ProductosView = lazy(() => import('./pages/productos/productos'))
+const BancosView = lazy(() => import('./pages/bancos/bancos'))
+const ProveedoresView = lazy(() => import('./pages/proveedores/proveedores'))
+const CategoriasView = lazy(() => import('./pages/categorias/categorias'))
 
-import { Route, createBrowserRouter, createRoutesFromElements, RouterProvider } from 'react-router-dom'
-import { RequireAuth, DisabledUponLogin } from '../utils/auth'
-
-import RecetasView from './pages/recetas/recetas'
-import { ThemeProvider } from '../context/ThemeContext'
-import ProductosView from './pages/productos/productos'
-import BancosView from './pages/bancos/bancos'
-import ProveedoresView from './pages/proveedores/proveedores'
-import CategoriasView from './pages/categorias/categorias'
+// Loading placeholder component
+const LoadingFallback = () => (
+  <div className="d-flex justify-content-center align-items-center" style={{ height: '100vh' }}>
+    <div className="spinner-border" role="status">
+      <span className="visually-hidden">Cargando...</span>
+    </div>
+  </div>
+)
 
 function App() {
-
-  const router = createBrowserRouter(
+  const router = useMemo(() => createBrowserRouter(
     createRoutesFromElements(
       <Route path='/' element={<RootLayout />}>
-        <Route index element={<Dashboard />} />
-
+        <Route index element={
+          <Suspense fallback={<LoadingFallback />}>
+            <Dashboard />
+          </Suspense>
+        } />
 
         <Route 
           path='login' 
@@ -33,44 +41,49 @@ function App() {
           } 
         />
 
-        <Route
-          path="recetas"
-          element={
+        <Route path="recetas" element={
+          <Suspense fallback={<LoadingFallback />}>
+            <RequireAuth>
               <RecetasView />
-          }
-        />
+            </RequireAuth>
+          </Suspense>
+        } />
 
-        <Route
-          path="productos"
-          element={
+        <Route path="productos" element={
+          <Suspense fallback={<LoadingFallback />}>
+            <RequireAuth>
               <ProductosView />
-          }
-        />
+            </RequireAuth>
+          </Suspense>
+        } />
 
-                <Route
-          path="bancos"
-          element={
+        <Route path="bancos" element={
+          <Suspense fallback={<LoadingFallback />}>
+            <RequireAuth>
               <BancosView />
-          }
-        />
+            </RequireAuth>
+          </Suspense>
+        } />
 
-        <Route
-          path="proveedores"
-          element={
+        <Route path="proveedores" element={
+          <Suspense fallback={<LoadingFallback />}>
+            <RequireAuth>
               <ProveedoresView />
-          }
-        />
+            </RequireAuth>
+          </Suspense>
+        } />
 
-        <Route
-          path="categorias"
-          element={
+        <Route path="categorias" element={
+          <Suspense fallback={<LoadingFallback />}>
+            <RequireAuth>
               <CategoriasView />
-          }
-        />
+            </RequireAuth>
+          </Suspense>
+        } />
 
       </Route>
     )
-  )
+  ), [])
 
   return (
     <ThemeProvider>
@@ -78,4 +91,5 @@ function App() {
     </ThemeProvider>
   )
 }
+
 export default App

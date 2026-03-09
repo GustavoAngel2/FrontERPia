@@ -1,11 +1,12 @@
 import { Link } from "react-router-dom";
+import { useMemo } from "react";
 import { useAuth } from "../../utils/auth";
 import ChatBot from "../ui/ChatBot";
 
 function Dashboard() {
   const { isLogged } = useAuth();
 
-  const modules = [
+  const modules = useMemo(() => [
     {
       key: "recetas",
       title: "Recetas",
@@ -46,7 +47,7 @@ function Dashboard() {
       to: "/categorias",
       colorClass: "dashboard-card-categorias",
     },
-  ];
+  ], []);
 
   return (
     <div className="page-content dashboard-page">
@@ -73,23 +74,6 @@ function Dashboard() {
                       <i className="bi bi-shield-check me-1" />
                       Sesión activa
                     </span>
-                  </div>
-                </div>
-                <div className="col-12 col-lg-5 mt-4 mt-lg-0 text-lg-end text-center">
-                  <div className="dashboard-hero-widget d-inline-block text-start">
-                    <p className="mb-1 text-muted text-uppercase small">
-                      Resumen rápido
-                    </p>
-                    <div className="d-flex flex-wrap gap-3">
-                      <div>
-                        <span className="dashboard-hero-number">5</span>
-                        <p className="mb-0 text-muted small">Módulos activos</p>
-                      </div>
-                      <div>
-                        <span className="dashboard-hero-number">24/7</span>
-                        <p className="mb-0 text-muted small">Disponibilidad</p>
-                      </div>
-                    </div>
                   </div>
                 </div>
               </div>
