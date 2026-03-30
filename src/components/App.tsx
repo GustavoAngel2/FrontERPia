@@ -12,6 +12,9 @@ const ProductosView = lazy(() => import('./pages/productos/productos'))
 const BancosView = lazy(() => import('./pages/bancos/bancos'))
 const ProveedoresView = lazy(() => import('./pages/proveedores/proveedores'))
 const CategoriasView = lazy(() => import('./pages/categorias/categorias'))
+const MovimientosView = lazy(() => import('./pages/movimientos/movimientos'))
+const SucursalesView = lazy(() => import('./pages/sucursales/sucursales'))
+const TraspasosView = lazy(() => import('./pages/traspasos/traspasos'))
 
 // Loading placeholder component
 const LoadingFallback = () => (
@@ -77,6 +80,30 @@ function App() {
           <Suspense fallback={<LoadingFallback />}>
             <RequireAuth>
               <CategoriasView />
+            </RequireAuth>
+          </Suspense>
+        } />
+
+        <Route path="movimientos" element={
+          <Suspense fallback={<LoadingFallback />}>
+            <RequireAuth>
+              <MovimientosView />
+            </RequireAuth>
+          </Suspense>
+        } />
+
+        <Route path="sucursales" element={
+          <Suspense fallback={<LoadingFallback />}>
+            <RequireAuth>
+              <SucursalesView />
+            </RequireAuth>
+          </Suspense>
+        } />
+
+        <Route path="traspasos" element={
+          <Suspense fallback={<LoadingFallback />}>
+            <RequireAuth>
+              <TraspasosView />
             </RequireAuth>
           </Suspense>
         } />

@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../../../utils/auth";
-import type { defaultApiResponse } from "../../../data/models/response.model";
 import type { Proveedor, InsertProveedor, UpdateProveedor } from "../../../data/models/proveedores.model";
 import type { Producto as BancoModel } from "../../../data/models/bancos.model";
-import { proveedoresService, bancosService } from "../../../utils/dataService";
+import { proveedoresService, bancosService } from "../../../data/dataService";
 import DataTable, { type Column } from "../../ui/DataTable";
 
 function ProveedoresView() {
@@ -11,7 +10,6 @@ function ProveedoresView() {
   const [loading, setLoading] = useState(false);
   const [proveedores, setProveedores] = useState<Proveedor[]>([]);
   const [bancos, setBancos] = useState<BancoModel[]>([]);
-  const [response, setResponse] = useState<defaultApiResponse | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState({
     Nombre: "",
@@ -57,10 +55,8 @@ function ProveedoresView() {
 
   const obtenerBancos = async () => {
     try {
-      const data: defaultApiResponse = await bancosService.obtenerBancos();
-      if (data.Response?.data && Array.isArray(data.Response.data)) {
-        setBancos(data.Response.data);
-      }
+      const data = await bancosService.obtenerBancos();
+      setBancos(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error("Error obteniendo bancos:", err);
     }
@@ -69,11 +65,8 @@ function ProveedoresView() {
   const obtenerProveedores = async () => {
     try {
       setLoading(true);
-      const data: defaultApiResponse = await proveedoresService.obtenerProveedores();
-      setResponse(data);
-      if (data.Response?.data && Array.isArray(data.Response.data)) {
-        setProveedores(data.Response.data);
-      }
+      const data = await proveedoresService.obtenerProveedores();
+      setProveedores(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error(err);
     } finally {

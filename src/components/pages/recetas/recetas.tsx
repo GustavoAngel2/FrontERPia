@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
-import type { defaultApiResponse } from "../../../data/models/response.model";
 import type { Receta, InsertReceta, UpdateReceta } from "../../../data/models/receta.model";
 import type { GetDetalleReceta, InsertDetalleReceta, UpdateDetalleReceta } from "../../../data/models/detalleReceta.model";
 import { useAuth } from "../../../utils/auth";
-import { recetasService, detalleRecetaService } from "../../../utils/dataService";
+import { recetasService, detalleRecetaService } from "../../../data/dataService";
 import DataTable, { type Column } from "../../ui/DataTable";
 interface DetalleReceta {
     Id: number;
@@ -18,7 +17,6 @@ interface DetalleReceta {
 function RecetasView() {
     const { user, isLogged } = useAuth();
     const [loading, setLoading] = useState(false);
-    const [response, setResponse] = useState<defaultApiResponse | null>(null);
     const [recetas, setRecetas] = useState<Receta[]>([]);
     const [editingId, setEditingId] = useState<number | null>(null);
     const [formData, setFormData] = useState({
@@ -67,16 +65,14 @@ function RecetasView() {
     const obtenerRecetas = async (): Promise<Receta[] | null> => {
         try {
             setLoading(true);
-            const data: defaultApiResponse = await recetasService.obtenerRecetas();
+            const data = await recetasService.obtenerRecetas();
             console.log("respuesta:", data);
-            if (data.Response?.data && Array.isArray(data.Response.data)) {
-                const list = data.Response.data as Receta[];
+            if (Array.isArray(data)) {
+                const list = data as Receta[];
                 setRecetas(list);
-                setResponse(data);
                 return list;
             }
             setRecetas([]);
-            setResponse(data);
             return [];
         } catch (error) {
             console.error("Error al obtener recetas:", error);
@@ -197,9 +193,9 @@ function RecetasView() {
         try {
             setLoading(true);
             const payload: GetDetalleReceta = { idReceta };
-            const data: defaultApiResponse = await detalleRecetaService.obtenerDetallesReceta(payload);
-            if (data.Response?.data && Array.isArray(data.Response.data)) {
-                setDetalles(data.Response.data as DetalleReceta[]);
+            const data = await detalleRecetaService.obtenerDetallesReceta(payload);
+            if (Array.isArray(data)) {
+                setDetalles(data as DetalleReceta[]);
             }
         } catch (error) {
             console.error("Error al obtener detalles:", error);

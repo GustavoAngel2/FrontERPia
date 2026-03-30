@@ -27,7 +27,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-const API_URL = "http://localhost:5020";
+const API_URL = "http://187.77.10.190:7000";
 const STORAGE_KEY = "auth_user";
 const LOGIN_KEY = "auth_isLogged";
 
@@ -70,9 +70,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const userData = data.Response.data.Usuario;
         setUser(userData);
         setIsLogged(true);
+
+        let userDataToStore: Record<string, unknown> = { ...userData };
+        const storedUser = localStorage.getItem(STORAGE_KEY);
+        if (storedUser) {
+          try {
+            const parsedStoredUser = JSON.parse(storedUser) as Record<string, unknown>;
+            const storedUserId = parsedStoredUser?.Id;
+            const sameUser = typeof storedUserId === "number" && storedUserId === userData.Id;
+            if (sameUser && parsedStoredUser?.chatbotHistoryV1) {
+              userDataToStore = {
+                ...userData,
+                chatbotHistoryV1: parsedStoredUser.chatbotHistoryV1,
+              };
+            }
+          } catch (error) {
+            console.error("Error parsing stored user during login:", error);
+          }
+        }
         
         // Save to localStorage
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(userData));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(userDataToStore));
         localStorage.setItem(LOGIN_KEY, "true");
         
         toast.info(`Bienvenido ${credentials.username}!`);

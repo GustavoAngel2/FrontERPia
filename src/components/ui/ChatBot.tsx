@@ -1,19 +1,25 @@
 import React, { useState, useCallback, useRef, useMemo } from 'react'
+import * as XLSX from 'xlsx'
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
 import './ChatBot.css'
+
+import { useAuth } from '../../utils/auth'
 
 interface Message {
   id: string
   text: string
   sender: 'user' | 'bot'
   timestamp: Date
+  tableData?: {
+    columnas: string[]
+    filas: Record<string, unknown>[]
+    total_registros: number
+  }
+  sql?: string
 }
 
 interface ChatBotResponse {
-  respuesta: string
-  sql?: string
-  posible: boolean
-  evaluacion_posibilidad?: string
-  resumen?: string | null
   datos?: {
     columnas: string[]
     filas: unknown[]
@@ -21,34 +27,241 @@ interface ChatBotResponse {
   }
 }
 
+const formatValue = (value: unknown): string => {
+  if (value === null || value === undefined) return '-'
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    return String(value)
+  }
+  return JSON.stringify(value)
+}
+
+const formatChatBotResponse = (data: ChatBotResponse): string => {
+  const lines: string[] = []
+
+  const total = data.datos?.total_registros
+  if (typeof total === 'number') {
+    lines.push(`Total de registros: ${total}`)
+  }
+
+  return lines.join('\n\n').trim() || 'No se pudo obtener una respuesta'
+}
+
 interface ChatBotProps {
   variant?: 'floating' | 'inline'
 }
 
-const MessageItem = React.memo<{ message: Message }>(({ message }) => (
-  <div className={`chatbot-message ${message.sender}`}>
-    <div className="message-content">{message.text}</div>
-    <span className="message-time">
-      {message.timestamp.toLocaleTimeString('es-ES', {
-        hour: '2-digit',
-        minute: '2-digit',
-      })}
-    </span>
-  </div>
-))
+const CHATBOT_HISTORY_KEY = 'chatbot-history-v1'
+const AUTH_USER_KEY = 'auth_user'
+const CHATBOT_HISTORY_FIELD = 'chatbotHistoryV1'
+
+const getDefaultMessages = (): Message[] => [
+  {
+    id: '1',
+    text: '¡Hola! ¿Cómo puedo ayudarte hoy?',
+    sender: 'bot',
+    timestamp: new Date(),
+  },
+]
+
+const getHistoryStorageKey = (userId: number | string): string => {
+  return `${CHATBOT_HISTORY_KEY}:user-${userId}`
+}
+
+const parseStoredMessages = (stored: string): Message[] => {
+  const parsed = JSON.parse(stored) as Array<Omit<Message, 'timestamp'> & { timestamp: string }>
+  if (!Array.isArray(parsed) || parsed.length === 0) return getDefaultMessages()
+
+  return parsed.map((message) => ({
+    ...message,
+    timestamp: new Date(message.timestamp),
+  }))
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> => {
+  return typeof value === 'object' && value !== null
+}
+
+const loadMessagesFromStorage = (userId: number | string): Message[] => {
+  try {
+    if (userId !== 'guest') {
+      const authStored = localStorage.getItem(AUTH_USER_KEY)
+      if (authStored) {
+        const authUser = JSON.parse(authStored) as unknown
+        if (isRecord(authUser) && Array.isArray(authUser[CHATBOT_HISTORY_FIELD])) {
+          return parseStoredMessages(JSON.stringify(authUser[CHATBOT_HISTORY_FIELD]))
+        }
+      }
+    }
+
+    const legacyStored = localStorage.getItem(getHistoryStorageKey(userId))
+    if (!legacyStored) return getDefaultMessages()
+
+    return parseStoredMessages(legacyStored)
+  } catch {
+    return getDefaultMessages()
+  }
+}
+
+const saveMessagesToStorage = (userId: number | string, messages: Message[]): void => {
+  if (userId === 'guest') {
+    localStorage.setItem(getHistoryStorageKey(userId), JSON.stringify(messages))
+    return
+  }
+
+  try {
+    const authStored = localStorage.getItem(AUTH_USER_KEY)
+    if (!authStored) {
+      localStorage.setItem(getHistoryStorageKey(userId), JSON.stringify(messages))
+      return
+    }
+
+    const authUser = JSON.parse(authStored) as unknown
+    if (!isRecord(authUser)) {
+      localStorage.setItem(getHistoryStorageKey(userId), JSON.stringify(messages))
+      return
+    }
+
+    const updatedAuthUser: Record<string, unknown> = {
+      ...authUser,
+      [CHATBOT_HISTORY_FIELD]: messages,
+    }
+
+    localStorage.setItem(AUTH_USER_KEY, JSON.stringify(updatedAuthUser))
+    localStorage.removeItem(getHistoryStorageKey(userId))
+  } catch {
+    localStorage.setItem(getHistoryStorageKey(userId), JSON.stringify(messages))
+  }
+}
+
+const buildExportRows = (
+  tableData: NonNullable<Message['tableData']>,
+): Record<string, string | number | boolean | null>[] => {
+  return tableData.filas.map((fila) => {
+    const row: Record<string, string | number | boolean | null> = {}
+    tableData.columnas.forEach((columna) => {
+      const value = fila[columna]
+      if (value === null || value === undefined) {
+        row[columna] = null
+      } else if (
+        typeof value === 'string' ||
+        typeof value === 'number' ||
+        typeof value === 'boolean'
+      ) {
+        row[columna] = value
+      } else {
+        row[columna] = JSON.stringify(value)
+      }
+    })
+    return row
+  })
+}
+
+const getExportFileBaseName = (messageId: string): string => {
+  const now = new Date()
+  const datePart = now.toISOString().slice(0, 10)
+  return `chatbot-tabla-${datePart}-${messageId}`
+}
+
+const exportTableAsXlsx = (messageId: string, tableData: NonNullable<Message['tableData']>) => {
+  const rows = buildExportRows(tableData)
+  const worksheet = XLSX.utils.json_to_sheet(rows, { header: tableData.columnas })
+  const workbook = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Resultados')
+  XLSX.writeFile(workbook, `${getExportFileBaseName(messageId)}.xlsx`)
+}
+
+const exportTableAsPdf = (messageId: string, tableData: NonNullable<Message['tableData']>) => {
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' })
+  const body = tableData.filas.map((fila) => tableData.columnas.map((columna) => formatValue(fila[columna])))
+
+  autoTable(doc, {
+    head: [tableData.columnas],
+    body,
+    margin: { top: 40, left: 20, right: 20, bottom: 20 },
+    styles: { fontSize: 8, cellPadding: 4 },
+    headStyles: { fillColor: [102, 126, 234] },
+  })
+
+  doc.save(`${getExportFileBaseName(messageId)}.pdf`)
+}
+
+const MessageItem = React.memo<{ message: Message }>(({ message }) => {
+  const hasTable = !!message.tableData && message.tableData.filas.length > 0
+
+  return (
+    <div className={`chatbot-message ${message.sender}`}>
+      <div className="message-content">
+        {message.text}
+        {hasTable && (
+          <>
+            <div className="chatbot-table-actions">
+              <button
+                type="button"
+                className="chatbot-export-btn"
+                onClick={() => {
+                  if (message.tableData) {
+                    exportTableAsXlsx(message.id, message.tableData)
+                  }
+                }}
+                title="Exportar a Excel"
+              >
+                XLSX
+              </button>
+              <button
+                type="button"
+                className="chatbot-export-btn"
+                onClick={() => {
+                  if (message.tableData) {
+                    exportTableAsPdf(message.id, message.tableData)
+                  }
+                }}
+                title="Exportar a PDF"
+              >
+                PDF
+              </button>
+            </div>
+            <div className="chatbot-table-wrapper">
+              <table className="chatbot-table">
+                <thead>
+                  <tr>
+                    {message.tableData?.columnas.map((columna) => (
+                      <th key={columna}>{columna}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {message.tableData?.filas.map((fila, rowIndex) => (
+                    <tr key={`${message.id}-${rowIndex}`}>
+                      {message.tableData?.columnas.map((columna) => (
+                        <td key={`${message.id}-${rowIndex}-${columna}`}>
+                          {formatValue(fila[columna])}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
+      </div>
+      <span className="message-time">
+        {message.timestamp.toLocaleTimeString('es-ES', {
+          hour: '2-digit',
+          minute: '2-digit',
+        })}
+      </span>
+    </div>
+  )
+})
 
 MessageItem.displayName = 'MessageItem'
 
 const ChatBot: React.FC<ChatBotProps> = ({ variant = 'floating' }) => {
+  const { user } = useAuth()
+  const activeUserId = user?.Id ?? 'guest'
   const [isOpen, setIsOpen] = useState(variant === 'inline')
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      text: '¡Hola! ¿Cómo puedo ayudarte hoy?',
-      sender: 'bot',
-      timestamp: new Date(),
-    },
-  ])
+  const [messages, setMessages] = useState<Message[]>(() => loadMessagesFromStorage(activeUserId))
   const [inputValue, setInputValue] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -81,7 +294,7 @@ const ChatBot: React.FC<ChatBotProps> = ({ variant = 'floating' }) => {
 
     try {
       // Call the chatbot API
-      const response = await fetch('http://127.0.0.1:5100/ia/consulta', {
+      const response = await fetch('http://187.77.10.190:8000/ia/consulta', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -97,14 +310,24 @@ const ChatBot: React.FC<ChatBotProps> = ({ variant = 'floating' }) => {
 
       const data: ChatBotResponse = await response.json()
 
-      // Extract the response text
-      const botResponseText = data.respuesta || 'No se pudo obtener una respuesta'
+      const botResponseText = formatChatBotResponse(data)
+      const columnas = data.datos?.columnas ?? []
+      const filas = (data.datos?.filas ?? []) as Record<string, unknown>[]
+      const totalRegistros = data.datos?.total_registros ?? filas.length
+      const hasTableData = columnas.length > 0 && filas.length > 0
 
       const botMessage: Message = {
         id: (Date.now() + 1).toString(),
         text: botResponseText,
         sender: 'bot',
         timestamp: new Date(),
+        tableData: hasTableData
+          ? {
+              columnas,
+              filas,
+              total_registros: totalRegistros,
+            }
+          : undefined,
       }
 
       setMessages((prev) => [...prev, botMessage])
@@ -131,10 +354,22 @@ const ChatBot: React.FC<ChatBotProps> = ({ variant = 'floating' }) => {
     }
   }, [])
 
+  React.useEffect(() => {
+    console.log('auth_user localStorage:', localStorage.getItem(AUTH_USER_KEY))
+  }, [])
+
   // Auto-scroll to bottom
   React.useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
+
+  React.useEffect(() => {
+    setMessages(loadMessagesFromStorage(activeUserId))
+  }, [activeUserId])
+
+  React.useEffect(() => {
+    saveMessagesToStorage(activeUserId, messages)
+  }, [activeUserId, messages])
 
   const isInputDisabled = useMemo(() => !inputValue.trim() || isLoading, [inputValue, isLoading])
 

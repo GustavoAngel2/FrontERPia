@@ -47,6 +47,30 @@ function Dashboard() {
       to: "/categorias",
       colorClass: "dashboard-card-categorias",
     },
+    {
+      key: "movimientos",
+      title: "Movimientos",
+      description: "Registra y consulta los movimientos del sistema.",
+      icon: "bi-arrow-left-right",
+      to: "/movimientos",
+      colorClass: "dashboard-card-productos",
+    },
+    {
+      key: "sucursales",
+      title: "Sucursales",
+      description: "Gestiona sucursales y su dirección.",
+      icon: "bi-shop",
+      to: "/sucursales",
+      colorClass: "dashboard-card-categorias",
+    },
+    {
+      key: "traspasos",
+      title: "Traspasos",
+      description: "Gestiona traspasos entre almacenes.",
+      icon: "bi-arrow-left-right",
+      to: "/traspasos",
+      colorClass: "dashboard-card-bancos",
+    },
   ], []);
 
   return (
@@ -137,7 +161,7 @@ function Dashboard() {
                             Ir al módulo
                           </span>
                           <Link
-                            className="btn btn-sm btn-outline-light dashboard-card-btn"
+                            className="btn btn-sm btn-outline-secondary"
                             to={module.to}
                           >
                             Abrir

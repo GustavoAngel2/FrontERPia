@@ -17,7 +17,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 999;
+  z-index: 2000;
   transition: all 0.3s ease;
 }
 
@@ -42,7 +42,7 @@
   box-shadow: 0 5px 40px rgba(0, 0, 0, 0.16);
   display: flex;
   flex-direction: column;
-  z-index: 999;
+  z-index: 2000;
   animation: slideUp 0.3s ease;
 }
 
@@ -153,6 +153,7 @@
   border-radius: 12px;
   font-size: 14px;
   line-height: 1.4;
+  white-space: pre-wrap;
   word-wrap: break-word;
 }
 
@@ -165,6 +166,66 @@
 .chatbot-message.user .message-content {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
+}
+
+.chatbot-table-wrapper {
+  margin-top: 10px;
+  overflow-x: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.chatbot-table-actions {
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+}
+
+.chatbot-export-btn {
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.chatbot-export-btn:hover {
+  border-color: #667eea;
+  color: #667eea;
+}
+
+.chatbot-table {
+  width: 100%;
+  min-width: 600px;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.chatbot-table th,
+.chatbot-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid #edf2f7;
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.chatbot-table th {
+  background: #f8fafc;
+  color: #334155;
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+}
+
+.chatbot-table tbody tr:last-child td {
+  border-bottom: none;
 }
 
 .message-time {

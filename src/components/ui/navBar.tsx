@@ -104,6 +104,21 @@ const NavBar = () => {
                 <i className="bi bi-bank"></i>
                 <span>Bancos</span>
               </Link>
+
+              <Link to="/movimientos" className="sidebar-link" onClick={closeSidebar}>
+                <i className="bi bi-arrow-left-right"></i>
+                <span>Movimientos</span>
+              </Link>
+
+              <Link to="/sucursales" className="sidebar-link" onClick={closeSidebar}>
+                <i className="bi bi-shop"></i>
+                <span>Sucursales</span>
+              </Link>
+
+              <Link to="/traspasos" className="sidebar-link" onClick={closeSidebar}>
+                <i className="bi bi-arrow-left-right"></i>
+                <span>Traspasos</span>
+              </Link>
             </>
           )}
         </nav>

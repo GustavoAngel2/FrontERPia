@@ -1,40 +1,50 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../../../utils/auth";
-import type { Producto as BancoModel, InsertProducto, UpdateProducto } from "../../../data/models/bancos.model";
-import { bancosService } from "../../../data/dataService";
+import type { Sucursal, InsertSucursal, UpdateSucursal } from "../../../data/models/sucursales.model";
+import { sucursalesService } from "../../../data/dataService";
 import DataTable, { type Column } from "../../ui/DataTable";
 
-function BancosView() {
+function SucursalesView() {
   const { user, isLogged } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [bancos, setBancos] = useState<BancoModel[]>([]);
+  const [sucursales, setSucursales] = useState<Sucursal[]>([]);
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [form, setForm] = useState({ Nombre: "", Direccion: "" });
   const [showModal, setShowModal] = useState(false);
+  const [form, setForm] = useState({ Nombre: "", Direccion: "" });
 
-  const bancosColumns: Column<BancoModel>[] = [
+  const sucursalesColumns: Column<Sucursal>[] = [
     { key: "Id", label: "ID", width: "60px" },
     { key: "Nombre", label: "Nombre" },
     { key: "Direccion", label: "Dirección" },
     {
       key: "FechaRegistro",
       label: "Fecha Registro",
+      render: (value) => {
+        if (!value) return "-";
+        const date = typeof value === "string" ? new Date(value.split("T")[0]) : new Date(value);
+        return isNaN(date.getTime()) ? "-" : date.toLocaleDateString();
+      },
     },
     {
       key: "FechaActualiza",
       label: "Fecha Actualiza",
+      render: (value) => {
+        if (!value) return "-";
+        const date = typeof value === "string" ? new Date(value.split("T")[0]) : new Date(value);
+        return isNaN(date.getTime()) ? "-" : date.toLocaleDateString();
+      },
     },
   ];
 
   useEffect(() => {
-    if (isLogged) obtenerBancos();
+    if (isLogged) obtenerSucursales();
   }, [isLogged]);
 
-  const obtenerBancos = async () => {
+  const obtenerSucursales = async () => {
     try {
       setLoading(true);
-      const data = await bancosService.obtenerBancos();
-      setBancos(Array.isArray(data) ? data : []);
+      const data = await sucursalesService.obtenerSucursales();
+      setSucursales(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error(err);
     } finally {
@@ -42,53 +52,53 @@ function BancosView() {
     }
   };
 
-  const crearBanco = async () => {
+  const crearSucursal = async () => {
     if (!form.Nombre.trim()) return alert("Ingrese nombre");
     try {
       setLoading(true);
-      const payload: InsertProducto = {
+      const payload: InsertSucursal = {
         nombre: form.Nombre,
         direccion: form.Direccion,
-        usuarioActualiza: user?.Id || 0,
+        idUsuario: user?.Id || 0,
       };
-      await bancosService.crearBanco(payload);
+      await sucursalesService.crearSucursal(payload);
       setForm({ Nombre: "", Direccion: "" });
       setShowModal(false);
-      await obtenerBancos();
+      await obtenerSucursales();
     } catch (err) {
       console.error(err);
-      alert("Error creando banco");
+      alert("Error creando sucursal");
     } finally {
       setLoading(false);
     }
   };
 
-  const actualizarBanco = async (id: number) => {
+  const actualizarSucursal = async (id: number) => {
     if (!form.Nombre.trim()) return alert("Ingrese nombre");
     try {
       setLoading(true);
-      const payload: UpdateProducto = {
+      const payload: UpdateSucursal = {
         id,
         nombre: form.Nombre,
         direccion: form.Direccion,
-        usuarioActualiza: user?.Id || 0,
+        idUsuario: user?.Id || 0,
       };
-      await bancosService.actualizarBanco(payload);
+      await sucursalesService.actualizarSucursal(payload);
       setForm({ Nombre: "", Direccion: "" });
       setEditingId(null);
       setShowModal(false);
-      await obtenerBancos();
+      await obtenerSucursales();
     } catch (err) {
       console.error(err);
-      alert("Error actualizando banco");
+      alert("Error actualizando sucursal");
     } finally {
       setLoading(false);
     }
   };
 
-  const editarBanco = (b: BancoModel) => {
-    setEditingId(b.Id);
-    setForm({ Nombre: b.Nombre, Direccion: b.Direccion });
+  const editarSucursal = (s: Sucursal) => {
+    setEditingId(s.Id);
+    setForm({ Nombre: s.Nombre, Direccion: s.Direccion });
     setShowModal(true);
   };
 
@@ -104,15 +114,15 @@ function BancosView() {
     setForm({ Nombre: "", Direccion: "" });
   };
 
-  const eliminarBanco = async (id: number) => {
-    if (!confirm("¿Eliminar banco?")) return;
+  const eliminarSucursal = async (id: number) => {
+    if (!confirm("¿Eliminar sucursal?")) return;
     try {
       setLoading(true);
-      await bancosService.eliminarBanco(id);
-      await obtenerBancos();
+      await sucursalesService.eliminarSucursal(id);
+      await obtenerSucursales();
     } catch (err) {
       console.error(err);
-      alert("Error eliminando banco");
+      alert("Error eliminando sucursal");
     } finally {
       setLoading(false);
     }
@@ -123,7 +133,7 @@ function BancosView() {
       <>
         <div className="page-content">
           <div className="container mt-4">
-            <div className="alert alert-warning">Debes iniciar sesión para ver bancos.</div>
+            <div className="alert alert-warning">Debes iniciar sesión para ver sucursales.</div>
           </div>
         </div>
       </>
@@ -134,35 +144,34 @@ function BancosView() {
     <>
       <div className="page-content">
         <div className="container mt-4">
-          <h2 className="mb-4">Bancos</h2>
+          <h2 className="mb-4">Sucursales</h2>
 
           <div className="mb-3">
             <button className="btn btn-primary" onClick={abrirModalCrear}>
-              <i className="fas fa-plus me-2"></i>Agregar Banco
+              <i className="fas fa-plus me-2"></i>Agregar Sucursal
             </button>
           </div>
 
           {loading && <div className="alert alert-info">Cargando...</div>}
 
           <DataTable
-            data={bancos}
-            columns={bancosColumns}
+            data={sucursales}
+            columns={sucursalesColumns}
             itemsPerPage={10}
             loading={loading}
-            onEdit={editarBanco}
-            onDelete={eliminarBanco}
+            onEdit={editarSucursal}
+            onDelete={eliminarSucursal}
             showActions={true}
-            emptyMessage="No hay bancos"
+            emptyMessage="No hay sucursales"
           />
         </div>
       </div>
 
-      {/* Modal */}
-      <div className={`modal fade ${showModal ? 'show' : ''}`} style={{ display: showModal ? 'block' : 'none' }} tabIndex={-1}>
+      <div className={`modal fade ${showModal ? "show" : ""}`} style={{ display: showModal ? "block" : "none" }} tabIndex={-1}>
         <div className="modal-dialog">
           <div className="modal-content">
             <div className="modal-header">
-              <h5 className="modal-title">{editingId ? 'Editar Banco' : 'Crear Banco'}</h5>
+              <h5 className="modal-title">{editingId ? "Editar Sucursal" : "Crear Sucursal"}</h5>
               <button type="button" className="btn-close" onClick={cerrarModal}></button>
             </div>
             <div className="modal-body">
@@ -173,7 +182,7 @@ function BancosView() {
                   className="form-control"
                   value={form.Nombre}
                   onChange={(e) => setForm({ ...form, Nombre: e.target.value })}
-                  placeholder="Ingrese nombre del banco"
+                  placeholder="Ingrese nombre"
                 />
               </div>
               <div className="mb-3">
@@ -183,7 +192,7 @@ function BancosView() {
                   className="form-control"
                   value={form.Direccion}
                   onChange={(e) => setForm({ ...form, Direccion: e.target.value })}
-                  placeholder="Ingrese dirección del banco"
+                  placeholder="Ingrese dirección"
                 />
               </div>
             </div>
@@ -192,12 +201,12 @@ function BancosView() {
                 Cancelar
               </button>
               {editingId ? (
-                <button type="button" className="btn btn-warning" onClick={() => actualizarBanco(editingId)} disabled={loading}>
-                  {loading ? 'Actualizando...' : 'Actualizar'}
+                <button type="button" className="btn btn-warning" onClick={() => actualizarSucursal(editingId)} disabled={loading}>
+                  {loading ? "Actualizando..." : "Actualizar"}
                 </button>
               ) : (
-                <button type="button" className="btn btn-success" onClick={crearBanco} disabled={loading}>
-                  {loading ? 'Creando...' : 'Crear'}
+                <button type="button" className="btn btn-success" onClick={crearSucursal} disabled={loading}>
+                  {loading ? "Creando..." : "Crear"}
                 </button>
               )}
             </div>
@@ -205,10 +214,9 @@ function BancosView() {
         </div>
       </div>
 
-      {/* Modal backdrop */}
       {showModal && <div className="modal-backdrop fade show"></div>}
     </>
   );
 }
 
-export default BancosView;
+export default SucursalesView;

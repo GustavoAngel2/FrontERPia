@@ -1,15 +1,13 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../../../utils/auth";
-import type { defaultApiResponse } from "../../../data/models/response.model";
 import type { Producto as ProductoModel, InsertProducto, UpdateProducto } from "../../../data/models/productos.model";
-import { productosService } from "../../../utils/dataService";
+import { productosService } from "../../../data/dataService";
 import DataTable, { type Column } from "../../ui/DataTable";
 
 function ProductosView() {
   const { user, isLogged } = useAuth();
   const [loading, setLoading] = useState(false);
   const [productos, setProductos] = useState<ProductoModel[]>([]);
-  const [response, setResponse] = useState<defaultApiResponse | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState({ Costo: "", Codigo: "", Descripcion: "", PrecioVenta: "" });
   const [showModal, setShowModal] = useState(false);
@@ -50,11 +48,8 @@ function ProductosView() {
   const obtenerProductos = async () => {
     try {
       setLoading(true);
-      const data: defaultApiResponse = await productosService.obtenerProductos();
-      setResponse(data);
-      if (data.Response?.data && Array.isArray(data.Response.data)) {
-        setProductos(data.Response.data);
-      }
+      const data = await productosService.obtenerProductos();
+      setProductos(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error(err);
     } finally {

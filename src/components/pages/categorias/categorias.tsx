@@ -1,15 +1,13 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../../../utils/auth";
-import type { defaultApiResponse } from "../../../data/models/response.model";
 import type { Categoria, InsertCategoria, UpdateCategoria } from "../../../data/models/categorias.model";
-import { categoriasService } from "../../../utils/dataService";
+import { categoriasService } from "../../../data/dataService";
 import DataTable, { type Column } from "../../ui/DataTable";
 
 function CategoriasView() {
   const { user, isLogged } = useAuth();
   const [loading, setLoading] = useState(false);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
-  const [response, setResponse] = useState<defaultApiResponse | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState({ Nombre: "" });
   const [showModal, setShowModal] = useState(false);
@@ -44,11 +42,8 @@ function CategoriasView() {
   const obtenerCategorias = async () => {
     try {
       setLoading(true);
-      const data: defaultApiResponse = await categoriasService.obtenerCategorias();
-      setResponse(data);
-      if (data.Response?.data && Array.isArray(data.Response.data)) {
-        setCategorias(data.Response.data);
-      }
+      const data = await categoriasService.obtenerCategorias();
+      setCategorias(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error(err);
     } finally {
